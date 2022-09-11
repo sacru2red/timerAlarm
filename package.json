@@ -5,7 +5,8 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "lint": "eslint ."
   },
   "author": "Shay DeWael",
   "license": "MIT",
@@ -19,6 +20,11 @@
   },
   "devDependencies": {
     "dotenv": "^16.0.2",
+    "eslint": "^8.23.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.5",
+    "eslint-plugin-promise": "^6.0.1",
     "nodemon": "^2.0.19"
   },
   "keywords": [
