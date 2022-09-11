@@ -1,18 +1,18 @@
-import express from 'express';
+import express from 'express'
 import {
   InteractionType,
   InteractionResponseType,
-  MessageComponentTypes,
-} from 'discord-interactions';
-import { VerifyDiscordRequest } from '../utils.js';
+  MessageComponentTypes
+} from 'discord-interactions'
+import { VerifyDiscordRequest } from '../utils.js'
 
 // Create and configure express app
-const app = express();
-app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
+const app = express()
+app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }))
 
 app.post('/interactions', function (req, res) {
   // Interaction type and data
-  const { type, data } = req.body;
+  const { type, data } = req.body
   /**
    * Handle slash command requests
    */
@@ -38,20 +38,20 @@ app.post('/interactions', function (req, res) {
                     {
                       label: 'Option #1',
                       value: 'option_1',
-                      description: 'The very first option',
+                      description: 'The very first option'
                     },
                     {
                       label: 'Second option',
                       value: 'option_2',
-                      description: 'The second AND last option',
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      });
+                      description: 'The second AND last option'
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      })
     }
   }
 
@@ -60,24 +60,24 @@ app.post('/interactions', function (req, res) {
    */
   if (type === InteractionType.MESSAGE_COMPONENT) {
     // custom_id set in payload when sending message component
-    const componentId = data.custom_id;
+    const componentId = data.custom_id
 
     if (componentId === 'my_select') {
-      console.log(req.body);
+      console.log(req.body)
 
       // Get selected option from payload
-      const selectedOption = data.values[0];
-      const userId = req.body.member.user.id;
+      const selectedOption = data.values[0]
+      const userId = req.body.member.user.id
 
       // Send results
       return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: { content: `<@${userId}> selected ${selectedOption}` },
-      });
+        data: { content: `<@${userId}> selected ${selectedOption}` }
+      })
     }
   }
-});
+})
 
 app.listen(3000, () => {
-  console.log('Listening on port 3000');
-});
+  console.log('Listening on port 3000')
+})
