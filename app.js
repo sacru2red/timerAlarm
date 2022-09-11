@@ -17,6 +17,8 @@ import {
   TEST_COMMAND,
   HasGuildCommands,
 } from "./commands.js";
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 // Create an express app
 const app = express();
@@ -24,6 +26,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 // Parse request body and verifies incoming requests using discord-interactions package
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
+app.use(express.urlencoded({extended: false}));
 
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
@@ -94,6 +97,9 @@ app.post("/interactions", async function (req, res) {
       });
     }
   }
+  return res.send({
+    type: InteractionResponseType.PONG
+  })
 });
 
 app.listen(PORT, () => {

@@ -1,56 +1,66 @@
-# Getting Started app for Discord
+## 디스코드 앱, 봇 만들기
 
-This project contains a basic rock-paper-scissors-style Discord app written in JavaScript, built for the [getting started guide](https://discord.com/developers/docs/getting-started).
+https://discord.com/developers/docs/getting-started
 
-![Demo of app](https://raw.githubusercontent.com/discord/discord-example-app/main/assets/getting-started-demo.gif)
+## 로컬에서 구동하기
 
-> ✨ A version of this code is also hosted **[on Glitch 🎏](https://glitch.com/~getting-started-discord)** and **[on Replit 🌀](https://replit.com/@shaydewael/discord-example-app)**
+### Windows
 
-## Project structure
-Below is a basic overview of the project structure:
+[chocolatey 다운로드](https://chocolatey.org/install)
+nodejs 설치
 
 ```
-├── examples    -> short, feature-specific sample apps
-│   ├── button.js
-│   ├── command.js
-│   ├── modal.js
-│   ├── selectMenu.js
-├── .env.sample -> sample .env file
-├── app.js      -> main entrypoint for app
-├── commands.js -> slash command payloads + helpers
-├── game.js     -> logic specific to RPS
-├── utils.js    -> utility functions and enums
-├── package.json
-├── README.md
-└── .gitignore
+choco install nodejs-lts
 ```
 
-## Running app locally
+git 설치
 
-Before you start, you'll need to [create a Discord app](https://discord.com/developers/applications) with the proper permissions:
-- `applications.commands`
-- `bot` (with Send Messages enabled)
-
-Configuring the app is covered in detail in the [getting started guide](https://discord.com/developers/docs/getting-started).
-### Setup project
-
-First clone the project:
 ```
-git clone https://github.com/discord/discord-example-app.git
+choco install git
 ```
 
-Then navigate to its directory and install dependencies:
+저장소 복제
+
 ```
-cd discord-example-app
+mkdir timerAlarm
+cd timerAlarm
+git clone https://github.com/sacru2red/timerAlarm
+```
+
+패키지 설치
+
+```
 npm install
 ```
-### Get app credentials
 
-Fetch the credentials from your app's settings and add them to a `.env` file (see `.env.sample` for an example). You'll need your app ID (`APP_ID`), server ID (`GUILD_ID`), bot token (`DISCORD_TOKEN`), and public key (`PUBLIC_KEY`).
+env 파일 수정 (앱 만들기에서 설정된 값으로)
 
-Fetching credentials is covered in detail in the [getting started guide](https://discord.com/developers/docs/getting-started).
+```
+/.env.sample => /.env copy and edit
+```
 
-> 🔑 Environment variables can be added to the `.env` file in Glitch or when developing locally, and in the Secrets tab in Replit (the lock icon on the left).
+ngrok 설치
+
+```
+choco install ngrok
+```
+
+ngrok 실행
+
+```
+ngrok http 3000
+```
+
+Forwarding 값 확인 후 디스코드 앱의 인터랙션 엔드포인트 URL(INTERACTIONS ENDPOINT URL) 변경
+
+```
+Forwarding                    https://b25e-220-119-201-230.jp.ngrok.io -> http://localhost:3000
+```
+
+```
+INTERACTIONS ENDPOINT URL
+https://b25e-220-119-201-230.jp.ngrok.io/interactions
+```
 
 ### Run the app
 
@@ -92,6 +102,7 @@ On the **General Information** tab, there will be an **Interactions Endpoint URL
 Click **Save Changes**, and your app should be ready to run 🚀
 
 ## Other resources
+
 - Read **[the documentation](https://discord.com/developers/docs/intro)** for in-depth information about API features.
 - Browse the `examples/` folder in this project for smaller, feature-specific code examples
 - Join the **[Discord Developers server](https://discord.gg/discord-developers)** to ask questions about the API, attend events hosted by the Discord API team, and interact with other devs.
