@@ -7,7 +7,7 @@
 - 저장소(HEAD 3fe8989)는 Discord HTTP 인터랙션 예제다. `app.js`는 Express `POST /interactions` 웹훅이라 음성을 받을 수 없다. `commands.js`, `game.js`, `examples/`는 가위바위보 예제다. 전부 지우고 Gateway 봇으로 새로 짠다.
 - 음성은 DAVE(E2EE)가 필수다(2026-03-01부터). `@discordjs/voice` 0.19.2 이상은 davey를 기본 의존성으로 설치하고 수신 패킷도 복호화한다.
 - STT는 sherpa-onnx SenseVoice 다국어 원본 모델 `sense-voice-zh-en-ja-ko-yue-2024-07-17`의 int8 파일이다. 같은 이름의 `int8-2025-09-09`는 광둥어 전용 파인튜닝이라 한국어를 못 읽는다(프로토타입에서 확인).
-- 프로토타입 측정(i5-12600K, SAPI 합성 음성, 버리는 코드는 scratchpad/stt-proto). 3~4초 발화 1스레드 디코딩 약 200~270ms, 8.2초 발화 512ms로 길이에 거의 선형. worker 2개 실행 중 메인 루프 최대 지연 20.8~22.4ms. RSS 386MB. 이 숫자는 x64 값이고 ARM 용량은 Step 9와 Step 14에서 VM에서 잰다.
+- 프로토타입 측정(i5-12600K, SAPI 합성 음성, 버리는 코드는 저장소 밖 로컬 프로토타입). 3~4초 발화 1스레드 디코딩 약 200~270ms, 8.2초 발화 512ms로 길이에 거의 선형. worker 2개 실행 중 메인 루프 최대 지연 20.8~22.4ms. RSS 386MB. 이 숫자는 x64 값이고 ARM 용량은 Step 9와 Step 14에서 VM에서 잰다.
 - Opus 경로 프로토타입(측정). SAPI WAV를 48kHz stereo Opus 패킷으로 인코딩하고, worker 안에서 `@discordjs/opus`의 `OpusEncoder(16000, 1)`로 16kHz mono로 바로 디코딩해 sherpa에 넣었다. WAV 직결 1스레드 출력과 비교하면 원문 기준 10개 중 4개가 달랐고(en1 `timerbot`이 `timer bot`, en4 쉼표, ko3 `1 분`이 `1푼`, ko4 `타이임머`가 `타이임머봇`), 공백과 문장부호를 지운 뒤에도 2개(ko3, ko4)가 달랐다. 압축만으로 출력이 흔들린다는 증거라서 코퍼스에 Opus 경로 출력을 별도 모드로 넣는다. 디코딩과 인식을 합쳐 발화당 188~373ms였다.
 - 모델 출력 특성. `lang`은 `<|ko|>`, `<|en|>` 형태다. 한국어 띄어쓰기가 불규칙하다(`남 았 어`). 웨이크워드가 `타이임머봇`, `타임머옷`, `타이임머`, `헤 타이임머`로 흔들린다. 영어 숫자는 `two`와 `10`이 섞인다.
 
