@@ -11,14 +11,14 @@
   "scripts": {
     "start": "node src/index.ts",
     "dev": "node --env-file=.env --watch src/index.ts",
-    "test": "node --test",
+    "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc",
     "lint": "eslint .",
     "deploy-commands": "node --env-file-if-exists=.env scripts/deploy-commands.ts",
-    "fetch-model": "node --env-file-if-exists=.env scripts/fetch-model.ts",
+    "fetch-model": "node scripts/fetch-model.ts",
     "encode-clips": "node scripts/encode-clips.ts",
-    "stt-bench": "node --env-file-if-exists=.env scripts/stt-bench.ts",
-    "load-test": "node --env-file-if-exists=.env scripts/load-test.ts"
+    "stt-bench": "node scripts/stt-bench.ts",
+    "load-test": "node scripts/load-test.ts"
   },
   "dependencies": {
     "@discordjs/opus": "^0.11.0",
