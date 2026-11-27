@@ -42,6 +42,9 @@ test('chatter about timers does not wake the bot', () => {
     '타이머 맞춰놨어?', '타이머 몇 분 남았지', '타이머 보여?', '타이머보니까 1분 남았네',
     '타이머보고 있어', '타이머보다 스톱워치가 낫지', '타이머보는 중', '타이머보면', '타이머보자', '타이머보이', '타이머보세요',
     '드래곤 타이머 몇 분이야', '바론 타이머 봐봐 곧이야', '타머 맞춰나스 누가가', '타이어 바꿨어', '제이가 타이머 맞췄대',
+    '오케이 타이머 맞출게', '오케이, 타이머 켜놨어', '오케이 타이머 2분 맞출게', '오케이 타이머 30초 남았어', '오케이 타임 어때',
+    '타이어 보러 가자', '타이어 보통 2분이면 갈아', '타이머 보러 가자', '타이머 보통 2분이야',
+    "Hey, timer's set for two minutes", "Hey, timer's up in thirty seconds", 'hey timers are off by a minute', "Hey, timer's up!",
     'set a timer for me', 'the timer is broken', 'I set the timer but it only had 2 minutes left',
   ]
   for (const text of cases) {

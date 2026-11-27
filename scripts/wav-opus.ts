@@ -4,7 +4,8 @@ import opus from '@discordjs/opus'
 const SAMPLE_RATE = 48000
 const CHANNELS = 2
 const FRAME_SAMPLES = 960
-const SILENCE = 0.02 * 32768
+const SILENCE = 0.01 * 32768
+const PAD_SAMPLES = 1920 // 40 ms kept around the speech so quiet onsets and endings survive
 
 const encoder = new opus.OpusEncoder(SAMPLE_RATE, CHANNELS)
 
@@ -52,7 +53,7 @@ function readWav (path: string): Wav {
 function toStereo ({ channels, samples }: Wav): Buffer {
   if (channels === 2) return samples
   const stereo = Buffer.alloc(samples.length * 2)
-  for (let i = 0; i < samples.length / 2; i++) {
+  for (let i = 0; i < Math.floor(samples.length / 2); i++) {
     const sample = samples.readInt16LE(i * 2)
     stereo.writeInt16LE(sample, i * 4)
     stereo.writeInt16LE(sample, i * 4 + 2)
@@ -67,5 +68,5 @@ function trimSilence (stereo: Buffer): Buffer {
   while (start < frames && !loud(start)) start++
   let end = frames
   while (end > start && !loud(end - 1)) end--
-  return stereo.subarray(start * 4, end * 4)
+  return stereo.subarray(Math.max(0, start - PAD_SAMPLES) * 4, Math.min(frames, end + PAD_SAMPLES) * 4)
 }

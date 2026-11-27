@@ -50,7 +50,7 @@ const workers = Array.from({ length: Number(values.workers) }, () => spawnSttWor
 await Promise.all(workers.map(worker => worker.run(clips[0]!.packets)))
 
 console.log(`scenario: ${clips.length} utterances per ${scenario.loopSec}s per guild, ${workers.length} STT worker(s), ${seconds}s per run`)
-console.log('guilds  utt  latency-p95  decode-p95  dropped  loop-lag-p99  cue-late-max  cpu   commands  false-wakes  pass')
+console.log('guilds  utt  utt/guild/min  latency-p95  decode-p95  dropped  loop-lag-p99  cue-late-max  cpu   commands  false-wakes  pass')
 const results: RunResult[] = []
 for (const guilds of guildCounts) {
   const result = await run(guilds, workers)
@@ -58,6 +58,7 @@ for (const guilds of guildCounts) {
   console.log([
     String(guilds).padStart(6),
     String(result.utterances).padStart(4),
+    (result.utterances / guilds / (seconds / 60)).toFixed(1).padStart(13),
     `${result.latencyP95.toFixed(0)}ms`.padStart(11),
     `${result.decodeP95.toFixed(0)}ms`.padStart(10),
     `${(result.dropRatio * 100).toFixed(1)}%`.padStart(7),
@@ -104,10 +105,11 @@ async function run (guilds: number, sttWorkers: readonly SttWorker[]): Promise<R
 
   for (let g = 0; g < guilds; g++) {
     const offsetMs = (g * scenario.loopSec * 1000) / guilds
-    for (let loop = 0; loop * scenario.loopSec * 1000 < seconds * 1000; loop++) {
+    // Start one loop early so every guild is already mid-scenario at t=0 and offers the full rate.
+    for (let loop = -1; loop * scenario.loopSec * 1000 < seconds * 1000; loop++) {
       for (const clip of clips) {
         const endsAt = offsetMs + (loop * scenario.loopSec + clip.line.at) * 1000 + clip.packets.length * 20 + SILENCE_MS
-        if (endsAt > seconds * 1000) continue
+        if (endsAt < 0 || endsAt > seconds * 1000) continue
         timers.push(setTimeout(() => pending.push(submit(pool, g, clip)), endsAt))
       }
     }
