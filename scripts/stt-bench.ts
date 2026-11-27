@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util'
 import opus from '@discordjs/opus'
 import sherpa from 'sherpa-onnx-node'
 import type { Wave } from 'sherpa-onnx-node'
+import { unpackFrames } from '../src/audio/clips.ts'
 import { SttPool, spawnSttWorker } from '../src/stt/pool.ts'
 import { createRecognizer, recognize } from '../src/stt/recognizer.ts'
 import type { Recognition } from '../src/stt/recognizer.ts'
@@ -12,6 +13,7 @@ const FIXTURES = 'test/fixtures/transcripts.jsonl'
 const MODES = ['auto', 'ko', 'opus'] as const
 type Mode = typeof MODES[number]
 type Run = Recognition & { ms: number }
+type Input = { wave: Wave } | { packets: Buffer[] }
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -39,12 +41,12 @@ for (const mode of modes) {
   const { decode, close } = decoderFor(mode)
   console.log(`\n== mode=${mode} threads=${mode === 'opus' ? 1 : numThreads} runs=${runs}`)
   for (const file of files) {
-    const wave = sherpa.readWave(file)
+    const input: Input = file.endsWith('.opusf') ? { packets: unpackFrames(readFileSync(file)) } : { wave: sherpa.readWave(file) }
     const results: Run[] = []
-    for (let i = 0; i < runs; i++) results.push(await decode(wave))
+    for (let i = 0; i < runs; i++) results.push(await decode(input))
     const times = results.map(result => result.ms).sort((a, b) => a - b)
     const { text, lang } = results.at(-1)!
-    const audioSec = wave.samples.length / wave.sampleRate
+    const audioSec = 'wave' in input ? input.wave.samples.length / input.wave.sampleRate : input.packets.length * 0.02
     console.log(`${basename(file)} audio=${audioSec.toFixed(2)}s median=${ms(median(times))} p95=${ms(percentile(times, 0.95))} range=${ms(times[0])}-${ms(times.at(-1))} lang=${lang} text=${JSON.stringify(text)}`)
     emitted.push({ file: basename(file), mode, text, lang })
   }
@@ -53,13 +55,14 @@ for (const mode of modes) {
 
 if (values['emit-fixtures']) mergeFixtures(emitted)
 
-function decoderFor (mode: Mode): { decode: (wave: Wave) => Promise<Run>; close: () => Promise<void> } {
+function decoderFor (mode: Mode): { decode: (input: Input) => Promise<Run>; close: () => Promise<void> } {
   if (mode === 'opus') {
     const pool = new SttPool({ workers: [spawnSttWorker(modelDir)], maxWaitMs: Infinity })
     const encoder = new opus.OpusEncoder(48000, 2)
     return {
-      decode: async wave => {
-        const transcript = await pool.transcribe({ guildId: 'bench', userId: 'bench', packets: toDiscordPackets(encoder, wave), endedAt: 0 })
+      decode: async input => {
+        const packets = 'packets' in input ? input.packets : toDiscordPackets(encoder, input.wave)
+        const transcript = await pool.transcribe({ guildId: 'bench', userId: 'bench', packets, endedAt: 0 })
         const { text, lang, decodeMs } = transcript!
         return { text, lang, ms: decodeMs }
       },
@@ -68,7 +71,9 @@ function decoderFor (mode: Mode): { decode: (wave: Wave) => Promise<Run>; close:
   }
   const recognizer = createRecognizer({ modelDir, numThreads, ...(mode === 'ko' && { forceLanguage: 'ko' as const }) })
   return {
-    decode: async wave => {
+    decode: async input => {
+      if (!('wave' in input)) throw new Error('.opusf dumps need --via-pool')
+      const { wave } = input
       const start = performance.now()
       const result = recognize(recognizer, wave.samples, wave.sampleRate)
       return { ...result, ms: performance.now() - start }
