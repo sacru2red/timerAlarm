@@ -33,6 +33,18 @@ test('rejects non-integer and out-of-range numbers', () => {
   assert.deepEqual(captureError(() => parseConfig({ ...base, AUDIO_LATENCY_MS: '1.5' })).keys, ['AUDIO_LATENCY_MS'])
 })
 
+test('accepts only plain decimal digits for integers', () => {
+  assert.equal(parseConfig({ ...base, MAX_ALARMS: ' 5 ' }).maxAlarms, 5)
+  assert.deepEqual(captureError(() => parseConfig({ ...base, MAX_ALARMS: '0x10' })).keys, ['MAX_ALARMS'])
+  assert.deepEqual(captureError(() => parseConfig({ ...base, AUDIO_LATENCY_MS: '1e3' })).keys, ['AUDIO_LATENCY_MS'])
+})
+
+test('rejects a heartbeat URL that is not http or https', () => {
+  assert.equal(parseConfig({ ...base, HEARTBEAT_URL: 'http://example.com/ping' }).heartbeatUrl?.protocol, 'http:')
+  assert.deepEqual(captureError(() => parseConfig({ ...base, HEARTBEAT_URL: 'ftp://example.com/ping' })).keys, ['HEARTBEAT_URL'])
+  assert.deepEqual(captureError(() => parseConfig({ ...base, HEARTBEAT_URL: 'file:///etc/passwd' })).keys, ['HEARTBEAT_URL'])
+})
+
 test('parses optional lists and URLs', () => {
   const config = parseConfig({ ...base, DEBUG_DUMP_USERS: ' 1, 2 ,,', HEARTBEAT_URL: 'https://hc-ping.com/abc' })
   assert.deepEqual([...config.debugDumpUsers], ['1', '2'])

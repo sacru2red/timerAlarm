@@ -41,7 +41,7 @@ export function parseConfig (env: Env): Config {
     const raw = optional(key)
     if (raw === undefined) return fallback
     const value = Number(raw)
-    if (!Number.isInteger(value) || value < min) {
+    if (!/^\d+$/.test(raw) || value < min) {
       problems.push([key, `must be an integer >= ${min}`])
       return fallback
     }
@@ -51,11 +51,12 @@ export function parseConfig (env: Env): Config {
   const url = (key: string): URL | undefined => {
     const raw = optional(key)
     if (raw === undefined) return undefined
-    if (!URL.canParse(raw)) {
-      problems.push([key, 'must be a URL'])
+    const parsed = URL.parse(raw)
+    if (parsed?.protocol !== 'http:' && parsed?.protocol !== 'https:') {
+      problems.push([key, 'must be an http or https URL'])
       return undefined
     }
-    return new URL(raw)
+    return parsed
   }
 
   const config: Config = {
