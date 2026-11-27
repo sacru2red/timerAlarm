@@ -98,3 +98,25 @@ test('a failing worker rejects its job and keeps serving', async () => {
   calls[1]!.finish(recognized('ok'))
   assert.equal((await next)?.text, 'ok')
 })
+
+test('stops respawning after the per-minute budget and fails jobs once no worker is left', async () => {
+  const dying = (): SttWorker => {
+    let dead = false
+    return {
+      run: async () => {
+        dead = true
+        throw new Error('model failed to load')
+      },
+      close: async () => {},
+      get dead () { return dead },
+    }
+  }
+  let spawned = 0
+  let empty = 0
+  const pool = new SttPool({ workers: [dying()], respawn: () => { spawned++; return dying() }, maxRespawnsPerMinute: 2, onNoWorkers: () => { empty++ } })
+  for (let i = 0; i < 3; i++) await assert.rejects(pool.transcribe(utterance(String(i))), /model failed to load/)
+  await flush()
+  assert.equal(spawned, 2)
+  assert.equal(empty, 1)
+  await assert.rejects(pool.transcribe(utterance('late')), /no STT worker/)
+})

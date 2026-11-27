@@ -64,6 +64,11 @@ export async function startBot (config: Config): Promise<void> {
       console.warn('an STT worker died; starting a new one')
       return spawn()
     },
+    // Exit so the container restarts instead of staying up deaf.
+    onNoWorkers: () => {
+      console.error('STT workers keep dying; exiting so the container restarts')
+      process.exit(1)
+    },
   })
   const voices = new Map<string, GuildVoice>()
   /** Guilds whose /join is still connecting; they count toward MAX_ACTIVE_GUILDS. */
@@ -199,10 +204,10 @@ export async function startBot (config: Config): Promise<void> {
     if (interaction.options.getSubcommand() !== 'list' && !mayControl(interaction, voice)) {
       return interaction.reply({ content: text(interaction, `${voice.channel.name} 음성 채널에 들어와서 써 주세요.`, `Join ${voice.channel.name} to change its alarms.`), flags: MessageFlags.Ephemeral })
     }
-    touch(interaction.guildId)
     const intent = slashIntent(interaction)
     if (!intent) return interaction.reply({ content: text(interaction, '시간을 이해하지 못했어요. 예: 2분, 1분 30초', 'Could not read the time. e.g. 2 minutes, 90 seconds'), flags: MessageFlags.Ephemeral })
     const reply = voice.session.execute(intent, langOf(interaction), Date.now())
+    if (reply.kind === 'ok' && intent.kind !== 'list') touch(interaction.guildId)
     await interaction.reply(reply.text)
     voice.announcer.respond(reply, { text: false }).catch(() => {})
   }
@@ -299,7 +304,7 @@ function humansIn (channel: VoiceBasedChannel): number {
 function mayControl (interaction: ChatInputCommandInteraction<'cached'>, voice: { channel: VoiceBasedChannel }): boolean {
   return interaction.member.voice.channelId === voice.channel.id ||
     humansIn(voice.channel) === 0 ||
-    interaction.memberPermissions.has(PermissionFlagsBits.MoveMembers)
+    voice.channel.permissionsFor(interaction.member).has(PermissionFlagsBits.MoveMembers)
 }
 
 function langOf (interaction: { locale: string }): Lang {

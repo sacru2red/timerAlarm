@@ -14,8 +14,12 @@ export type SttWorker = {
 
 export type PoolOptions = {
   workers: readonly SttWorker[]
-  /** Replaces a dead worker. Without it the pool just stops using that worker. */
+  /** Replaces a dead worker. Without it the pool stops using that worker, and fails jobs once none is left. */
   respawn?: () => SttWorker
+  /** Respawns allowed per minute, so a model that cannot load does not restart on every utterance. */
+  maxRespawnsPerMinute?: number
+  /** Called once no worker is left and none may be respawned. */
+  onNoWorkers?: () => void
   maxWaitMs?: number
   now?: () => number
 }
@@ -23,6 +27,7 @@ export type PoolOptions = {
 type Job = { utterance: Utterance; queuedAt: number; resolve: (transcript: Transcript | undefined) => void; reject: (error: unknown) => void }
 
 export const DEFAULT_MAX_WAIT_MS = 2000
+export const DEFAULT_MAX_RESPAWNS_PER_MINUTE = 5
 
 export function workerCount (cores = availableParallelism()): number {
   return Math.max(1, cores - 1)
@@ -33,21 +38,27 @@ export class SttPool {
   #workers: SttWorker[]
   #queue: Job[] = []
   #respawn: (() => SttWorker) | undefined
+  #maxRespawnsPerMinute: number
+  #onNoWorkers: (() => void) | undefined
+  #respawnTimes: number[] = []
   #maxWaitMs: number
   #now: () => number
   dropped = 0
   respawned = 0
 
-  constructor ({ workers, respawn, maxWaitMs = DEFAULT_MAX_WAIT_MS, now = () => performance.now() }: PoolOptions) {
+  constructor ({ workers, respawn, maxRespawnsPerMinute = DEFAULT_MAX_RESPAWNS_PER_MINUTE, onNoWorkers, maxWaitMs = DEFAULT_MAX_WAIT_MS, now = () => performance.now() }: PoolOptions) {
     this.#workers = [...workers]
     this.#idle = [...workers]
     this.#respawn = respawn
+    this.#maxRespawnsPerMinute = maxRespawnsPerMinute
+    this.#onNoWorkers = onNoWorkers
     this.#maxWaitMs = maxWaitMs
     this.#now = now
   }
 
   transcribe (utterance: Utterance): Promise<Transcript | undefined> {
     return new Promise((resolve, reject) => {
+      if (this.#workers.length === 0) return reject(new Error('no STT worker is running'))
       this.#queue.push({ utterance, queuedAt: this.#now(), resolve, reject })
       this.#drain()
     })
@@ -66,6 +77,12 @@ export class SttPool {
         continue
       }
       const worker = this.#idle.pop()!
+      if (worker.dead) {
+        // Died while idle: replace it and put the job back instead of failing it.
+        this.#queue.unshift(job)
+        this.#release(worker)
+        continue
+      }
       worker.run(job.utterance.packets).then(
         recognized => job.resolve({ utterance: job.utterance, ...recognized }),
         job.reject
@@ -83,11 +100,19 @@ export class SttPool {
     }
     this.#workers = this.#workers.filter(other => other !== worker)
     worker.close().catch(() => {})
-    if (!this.#respawn) return
-    const fresh = this.#respawn()
-    this.respawned++
-    this.#workers.push(fresh)
-    this.#idle.push(fresh)
+    const now = this.#now()
+    this.#respawnTimes = this.#respawnTimes.filter(at => now - at < 60_000)
+    if (this.#respawn && this.#respawnTimes.length < this.#maxRespawnsPerMinute) {
+      const fresh = this.#respawn()
+      this.#respawnTimes.push(now)
+      this.respawned++
+      this.#workers.push(fresh)
+      this.#idle.push(fresh)
+    }
+    if (this.#workers.length === 0) {
+      for (const job of this.#queue.splice(0)) job.reject(new Error('no STT worker is running'))
+      this.#onNoWorkers?.()
+    }
   }
 }
 

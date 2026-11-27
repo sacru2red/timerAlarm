@@ -1,4 +1,3 @@
-import { MAX_DURATION_MS } from '../alarm/scheduler.ts'
 import type { Target } from '../alarm/types.ts'
 import { englishTokens, extractEnglishDuration, extractKoreanDuration } from './numbers.ts'
 import type { WakeMatch } from './wake-word.ts'
@@ -47,7 +46,7 @@ export function parseCommand (wake: WakeMatch): Intent {
   const grammar = wake.script === 'ko' ? KOREAN : ENGLISH
   const found = wake.script === 'ko' ? extractKoreanDuration(wake.rest) : extractEnglishDuration(englishTokens(wake.rest))
   const words = found?.rest ?? wake.rest
-  const duration = found && found.ms <= MAX_DURATION_MS ? found : undefined
+  const duration = found && Number.isFinite(found.ms) ? found : undefined
   const earlier = grammar.earlier.test(words) || grammar.earlierRightAfterDuration?.test(duration?.after ?? '')
 
   if (grammar.cancel.test(words)) return { kind: 'cancel', target: targetOf(grammar, words) }
