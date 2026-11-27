@@ -10,6 +10,8 @@
 
 **예외.** 개발자가 인식 품질을 조정할 때, 운영 설정 `DEBUG_DUMP_USERS`에 직접 적은 테스트 사용자의 발화만 파일로 저장합니다. 공개 운영에서는 이 값을 비워 둡니다.
 
+**봇 목소리.** 봇이 말하는 목소리는 사람이 녹음한 것이 아니라 Supertonic 3 음성 합성 모델로 만든 기계 음성입니다.
+
 **삭제 요청.** `/voice off`를 실행하면 해당 서버의 동의 기록이 즉시 지워집니다.
 
 ## English
@@ -21,5 +23,7 @@
 **What is stored.** Only the list of opted-in `server ID:user ID` pairs. Audio, transcripts and alarm history are not stored. Alarms live in memory and disappear when the bot restarts.
 
 **Exception.** While tuning recognition, the operator may save utterances of test users explicitly listed in the `DEBUG_DUMP_USERS` setting. It is empty in public operation.
+
+**The bot's voice.** The bot's voice is machine-generated with the Supertonic 3 speech synthesis model, not recorded by a person.
 
 **Deletion.** `/voice off` removes your opt-in record for that server immediately.

@@ -17,6 +17,7 @@
     "deploy-commands": "node --env-file-if-exists=.env scripts/deploy-commands.ts",
     "fetch-model": "node scripts/fetch-model.ts",
     "encode-clips": "node scripts/encode-clips.ts",
+    "encode-scenario": "node scripts/encode-scenario.ts",
     "stt-bench": "node scripts/stt-bench.ts",
     "load-test": "node scripts/load-test.ts",
     "check-clips": "node scripts/check-clips.ts"

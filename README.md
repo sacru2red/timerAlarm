@@ -31,7 +31,7 @@ The bot only listens to people who opt in, per server, with the button on the `/
    npm run fetch-model        # 239 MB, checked by sha256
    ```
 
-3. Voice clips: `assets/voice/<lang>/<kind>.opusf`. See [assets/voice/SOURCE.md](assets/voice/SOURCE.md). On Windows, development clips come from `pwsh scripts/sapi-clips.ps1 && npm run encode-clips`. `npm run check-clips` verifies them.
+3. Voice clips are committed in `assets/voice/<lang>/<kind>.opusf`. They are synthesized with Supertonic 3; [assets/voice/SOURCE.md](assets/voice/SOURCE.md) explains how to regenerate them. `npm run check-clips` verifies them.
 4. Register commands and run:
 
    ```sh
@@ -67,7 +67,7 @@ npm run deploy-commands -- --global
 1. Sign up with Seoul or Chuncheon as the home region. Always Free instances only exist in the home region, and the home region cannot change.
 2. Create a VM.Standard.A1.Flex instance (Ubuntu 24.04, aarch64) and check that the shape shows "Always Free-eligible". Open only SSH inbound.
 3. Upgrade to Pay As You Go and set a $1 budget alert. Idle Always Free instances can be reclaimed (CPU, network and memory under 20% for 7 days); a reclaimed instance is only stopped, so start it again from the console.
-4. Install Docker, run `sudo systemctl enable docker`, clone this repo, copy `.env` and the voice clips, then:
+4. Install Docker, run `sudo systemctl enable docker`, clone this repo, copy `.env`, then:
 
    ```sh
    docker compose up -d --build
