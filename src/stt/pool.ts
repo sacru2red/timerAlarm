@@ -14,11 +14,10 @@ export type SttWorker = {
 
 export type PoolOptions = {
   workers: readonly SttWorker[]
-  /** Replaces a dead worker. Without it the pool stops using that worker, and fails jobs once none is left. */
+  /** Replaces a dead worker. */
   respawn?: () => SttWorker
   /** Respawns allowed per minute, so a model that cannot load does not restart on every utterance. */
   maxRespawnsPerMinute?: number
-  /** Called once no worker is left and none may be respawned. */
   onNoWorkers?: () => void
   maxWaitMs?: number
   now?: () => number

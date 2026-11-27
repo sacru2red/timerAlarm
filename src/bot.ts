@@ -26,6 +26,8 @@ import type { Lang, Target } from './alarm/types.ts'
 import { loadClips, packFrames } from './audio/clips.ts'
 import type { Config } from './config.ts'
 import { ConsentStore } from './consent.ts'
+import { isIdle, joinRefusal, mayControl } from './discord/control.ts'
+import type { BotChannel, Caller } from './discord/control.ts'
 import { englishTokens, extractEnglishDuration, extractKoreanDuration } from './nlu/numbers.ts'
 import type { Intent } from './nlu/parse-command.ts'
 import { compactKorean } from './nlu/wake-word.ts'
@@ -37,14 +39,11 @@ import { createSession } from './voice/session.ts'
 const RECONNECT_MS = 5000
 const ALONE_MS = 60_000
 const HEARTBEAT_MS = 5 * 60_000
-// Frees the slot for other servers when a channel keeps the bot without using it.
-const IDLE_MS = 30 * 60_000
 const IDLE_CHECK_MS = 60_000
 const CONSENT_BUTTON = 'voice:on'
 
 type GuildVoice = {
   connection: VoiceConnection
-  /** The channel the bot is in now; updated when someone moves it. */
   channel: VoiceBasedChannel
   announcer: Announcer
   session: ReturnType<typeof createSession>
@@ -71,7 +70,7 @@ export async function startBot (config: Config): Promise<void> {
     },
   })
   const voices = new Map<string, GuildVoice>()
-  /** Guilds whose /join is still connecting; they count toward MAX_ACTIVE_GUILDS. */
+  /** Counted toward MAX_ACTIVE_GUILDS while /join connects. */
   const joining = new Set<string>()
   const touch = (guildId: string) => {
     const voice = voices.get(guildId)
@@ -167,17 +166,24 @@ export async function startBot (config: Config): Promise<void> {
   const onJoin = async (interaction: ChatInputCommandInteraction<'cached'>) => {
     const channel = interaction.member.voice.channel
     if (!channel) return interaction.reply({ content: text(interaction, '먼저 음성 채널에 들어가 주세요.', 'Join a voice channel first.'), flags: MessageFlags.Ephemeral })
-    if (joining.has(interaction.guildId)) return interaction.reply({ content: text(interaction, '지금 들어가는 중이에요.', 'Already joining.'), flags: MessageFlags.Ephemeral })
     const current = voices.get(interaction.guildId)
-    if (current?.channel.id === channel.id) return interaction.reply({ content: text(interaction, '이미 이 채널에 있어요.', 'Already here.'), flags: MessageFlags.Ephemeral })
-    if (current && !mayControl(interaction, current)) {
-      return interaction.reply({
-        content: text(interaction, `${current.channel.name}에서 쓰는 중이에요. 그 채널에서 /leave 하거나 멤버 이동 권한이 있어야 옮길 수 있어요.`, `In use in ${current.channel.name}. Use /leave there, or you need the Move Members permission.`),
-        flags: MessageFlags.Ephemeral,
-      })
-    }
-    if (!current && voices.size + joining.size >= config.maxActiveGuilds) {
-      return interaction.reply({ content: text(interaction, '지금은 자리가 없어요. 잠시 뒤에 다시 시도해 주세요.', 'No free slot right now. Please try again later.'), flags: MessageFlags.Ephemeral })
+    const refusal = joinRefusal({
+      targetId: channel.id,
+      current: current && botChannel(current.channel),
+      caller: callerOf(interaction, current?.channel),
+      joining: joining.has(interaction.guildId),
+      active: voices.size + joining.size,
+      maxActive: config.maxActiveGuilds,
+    })
+    if (refusal) {
+      const where = current?.channel.name ?? ''
+      const messages = {
+        joining: text(interaction, '지금 들어가는 중이에요.', 'Already joining.'),
+        alreadyHere: text(interaction, '이미 이 채널에 있어요.', 'Already here.'),
+        inUse: text(interaction, `${where}에서 쓰는 중이에요. 그 채널에서 /leave 하거나 멤버 이동 권한이 있어야 옮길 수 있어요.`, `In use in ${where}. Use /leave there, or you need the Move Members permission.`),
+        noSlot: text(interaction, '지금은 자리가 없어요. 잠시 뒤에 다시 시도해 주세요.', 'No free slot right now. Please try again later.'),
+      }
+      return interaction.reply({ content: messages[refusal], flags: MessageFlags.Ephemeral })
     }
     joining.add(interaction.guildId)
     try {
@@ -201,7 +207,7 @@ export async function startBot (config: Config): Promise<void> {
   const onAlarm = async (interaction: ChatInputCommandInteraction<'cached'>) => {
     const voice = voices.get(interaction.guildId)
     if (!voice) return interaction.reply({ content: text(interaction, '먼저 /join 으로 봇을 음성 채널에 불러 주세요.', 'Use /join first.'), flags: MessageFlags.Ephemeral })
-    if (interaction.options.getSubcommand() !== 'list' && !mayControl(interaction, voice)) {
+    if (interaction.options.getSubcommand() !== 'list' && !mayControl(callerOf(interaction, voice.channel), botChannel(voice.channel))) {
       return interaction.reply({ content: text(interaction, `${voice.channel.name} 음성 채널에 들어와서 써 주세요.`, `Join ${voice.channel.name} to change its alarms.`), flags: MessageFlags.Ephemeral })
     }
     const intent = slashIntent(interaction)
@@ -215,7 +221,7 @@ export async function startBot (config: Config): Promise<void> {
   const onLeave = async (interaction: ChatInputCommandInteraction<'cached'>) => {
     const voice = voices.get(interaction.guildId)
     if (!voice) return interaction.reply({ content: text(interaction, '음성 채널에 있지 않아요.', 'Not in a voice channel.'), flags: MessageFlags.Ephemeral })
-    if (!mayControl(interaction, voice)) {
+    if (!mayControl(callerOf(interaction, voice.channel), botChannel(voice.channel))) {
       return interaction.reply({ content: text(interaction, `${voice.channel.name} 음성 채널에 들어와서 써 주세요.`, `Join ${voice.channel.name} to make the bot leave.`), flags: MessageFlags.Ephemeral })
     }
     leave(interaction.guildId)
@@ -258,7 +264,7 @@ export async function startBot (config: Config): Promise<void> {
     if (!voice) return
     if (after.id === client.user?.id && after.channel && after.channelId !== voice.channel.id) voice.channel = after.channel
     if (before.channelId !== voice.channel.id && after.channelId !== voice.channel.id) return
-    if (humansIn(voice.channel) > 0) {
+    if (botChannel(voice.channel).humans > 0) {
       clearTimeout(voice.aloneTimer)
       voice.aloneTimer = undefined
     } else {
@@ -268,7 +274,7 @@ export async function startBot (config: Config): Promise<void> {
 
   setInterval(() => {
     for (const [guildId, voice] of voices) {
-      if (scheduler.list(guildId).length === 0 && Date.now() - voice.lastActivity > IDLE_MS) {
+      if (isIdle(scheduler.list(guildId).length, voice.lastActivity, Date.now())) {
         leave(guildId, '30분 동안 알람이 없어서 나갔어요. 필요하면 /join 해 주세요. / Left after 30 minutes without alarms; use /join again any time.')
       }
     }
@@ -296,15 +302,15 @@ export async function startBot (config: Config): Promise<void> {
   await client.login(config.discordToken)
 }
 
-function humansIn (channel: VoiceBasedChannel): number {
-  return channel.members.filter(member => !member.user.bot).size
+function botChannel (channel: VoiceBasedChannel): BotChannel {
+  return { id: channel.id, humans: channel.members.filter(member => !member.user.bot).size }
 }
 
-/** Only people in the bot's channel may change it, unless the channel is empty or they can move members. */
-function mayControl (interaction: ChatInputCommandInteraction<'cached'>, voice: { channel: VoiceBasedChannel }): boolean {
-  return interaction.member.voice.channelId === voice.channel.id ||
-    humansIn(voice.channel) === 0 ||
-    voice.channel.permissionsFor(interaction.member).has(PermissionFlagsBits.MoveMembers)
+function callerOf (interaction: ChatInputCommandInteraction<'cached'>, botVoice: VoiceBasedChannel | undefined): Caller {
+  return {
+    channelId: interaction.member.voice.channelId,
+    canMoveMembers: botVoice?.permissionsFor(interaction.member).has(PermissionFlagsBits.MoveMembers) ?? false,
+  }
 }
 
 function langOf (interaction: { locale: string }): Lang {
