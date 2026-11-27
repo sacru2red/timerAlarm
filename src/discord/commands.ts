@@ -31,12 +31,12 @@ export const COMMANDS = [
       .setName('set')
       .setDescription('Set an alarm')
       .setDescriptionLocalizations({ ko: '알람 맞추기' })
-      .addStringOption(option => option.setName('time').setDescription('e.g. 2분, 1분 30초, 90 seconds').setRequired(true)))
+      .addStringOption(option => option.setName('time').setMaxLength(50).setDescription('e.g. 2분, 1분 30초, 90 seconds').setRequired(true)))
     .addSubcommand(sub => sub
       .setName('shift')
       .setDescription('Move an alarm later (or earlier with a minus sign)')
       .setDescriptionLocalizations({ ko: '알람 늦추기 (앞에 -를 붙이면 당기기)' })
-      .addStringOption(option => option.setName('amount').setDescription('e.g. 10초, -30초, 1 minute').setRequired(true))
+      .addStringOption(option => option.setName('amount').setMaxLength(50).setDescription('e.g. 10초, -30초, 1 minute').setRequired(true))
       .addStringOption(target))
     .addSubcommand(sub => sub
       .setName('cancel')

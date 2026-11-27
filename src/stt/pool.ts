@@ -8,10 +8,14 @@ export type Recognized = { text: string; lang: DetectedLang; decodeMs: number }
 export type SttWorker = {
   run (packets: readonly Buffer[]): Promise<Recognized>
   close (): Promise<void>
+  /** True once the worker thread has crashed or exited; it will reject every further job. */
+  readonly dead?: boolean
 }
 
 export type PoolOptions = {
   workers: readonly SttWorker[]
+  /** Replaces a dead worker. Without it the pool just stops using that worker. */
+  respawn?: () => SttWorker
   maxWaitMs?: number
   now?: () => number
 }
@@ -26,15 +30,18 @@ export function workerCount (cores = availableParallelism()): number {
 
 export class SttPool {
   #idle: SttWorker[]
-  #workers: readonly SttWorker[]
+  #workers: SttWorker[]
   #queue: Job[] = []
+  #respawn: (() => SttWorker) | undefined
   #maxWaitMs: number
   #now: () => number
   dropped = 0
+  respawned = 0
 
-  constructor ({ workers, maxWaitMs = DEFAULT_MAX_WAIT_MS, now = () => performance.now() }: PoolOptions) {
-    this.#workers = workers
+  constructor ({ workers, respawn, maxWaitMs = DEFAULT_MAX_WAIT_MS, now = () => performance.now() }: PoolOptions) {
+    this.#workers = [...workers]
     this.#idle = [...workers]
+    this.#respawn = respawn
     this.#maxWaitMs = maxWaitMs
     this.#now = now
   }
@@ -63,10 +70,24 @@ export class SttPool {
         recognized => job.resolve({ utterance: job.utterance, ...recognized }),
         job.reject
       ).finally(() => {
-        this.#idle.push(worker)
+        this.#release(worker)
         this.#drain()
       })
     }
+  }
+
+  #release (worker: SttWorker): void {
+    if (!worker.dead) {
+      this.#idle.push(worker)
+      return
+    }
+    this.#workers = this.#workers.filter(other => other !== worker)
+    worker.close().catch(() => {})
+    if (!this.#respawn) return
+    const fresh = this.#respawn()
+    this.respawned++
+    this.#workers.push(fresh)
+    this.#idle.push(fresh)
   }
 }
 
@@ -75,15 +96,19 @@ export function spawnSttWorker (modelDir: string): SttWorker {
   const pending = new Map<number, { resolve: (recognized: Recognized) => void; reject: (error: Error) => void }>()
   let nextId = 0
   let failure: Error | undefined
-  worker.on('message', ({ id, text, lang, decodeMs }: WorkerReply) => {
-    pending.get(id)?.resolve({ text, lang, decodeMs })
-    pending.delete(id)
-  })
-  worker.on('error', error => {
-    failure = error
+  const fail = (error: Error) => {
+    failure ??= error
     for (const { reject } of pending.values()) reject(error)
     pending.clear()
+  }
+  worker.on('message', ({ id, text, lang, decodeMs, error }: WorkerReply) => {
+    const job = pending.get(id)
+    pending.delete(id)
+    if (error) job?.reject(new Error(error))
+    else job?.resolve({ text, lang, decodeMs })
   })
+  worker.on('error', fail)
+  worker.on('exit', code => fail(new Error(`STT worker exited with code ${code}`)))
   return {
     run: packets => new Promise((resolve, reject) => {
       if (failure) return reject(failure)
@@ -92,5 +117,6 @@ export function spawnSttWorker (modelDir: string): SttWorker {
       worker.postMessage({ id, packets: [...packets] } satisfies WorkerRequest)
     }),
     close: async () => { await worker.terminate() },
+    get dead () { return failure !== undefined },
   }
 }

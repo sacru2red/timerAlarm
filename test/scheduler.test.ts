@@ -1,6 +1,6 @@
 import { test, type TestContext } from 'node:test'
 import assert from 'node:assert/strict'
-import { AlarmScheduler } from '../src/alarm/scheduler.ts'
+import { AlarmScheduler, MAX_DURATION_MS } from '../src/alarm/scheduler.ts'
 import type { CueKind } from '../src/alarm/types.ts'
 
 type Emitted = { guildId: string; alarmId: number; kind: CueKind; at: number; firedAt: number }
@@ -191,4 +191,16 @@ test('clear removes every alarm of one guild and its pending cues', t => {
   assert.deepEqual(scheduler.list('A'), [])
   tick(30_000)
   assert.deepEqual([...new Set(emitted.map(e => e.guildId))], ['B'])
+})
+
+test('alarms and shifts beyond 24 hours or not finite are too long', t => {
+  const { scheduler, tick, emitted } = setup(t)
+  assert.equal(scheduler.set('A', MAX_DURATION_MS + 1, 'ko').result, 'tooLong')
+  assert.equal(scheduler.set('A', Infinity, 'ko').result, 'tooLong')
+  assert.equal(scheduler.set('A', 2_160_000_000, 'ko').result, 'tooLong')
+  assert.equal(scheduler.set('A', MAX_DURATION_MS, 'ko').result, 'ok')
+  assert.deepEqual(scheduler.shift('A', 1_000, { by: 'next' }), { result: 'tooLong' })
+  assert.deepEqual(scheduler.shift('A', Infinity, { by: 'all' }), { result: 'tooLong' })
+  tick(10_000)
+  assert.deepEqual(emitted, [])
 })

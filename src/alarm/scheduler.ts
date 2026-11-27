@@ -20,6 +20,8 @@ export type Outcome =
 
 export const MIN_REMAINING_MS = 5000
 export const MIN_GAP_MS = 4000
+// Also keeps every cue delay far below setTimeout's 2^31-1 ms limit, past which Node fires at once.
+export const MAX_DURATION_MS = 24 * 60 * 60 * 1000
 
 const CUES: ReadonlyArray<readonly [kind: CueKind, offsetMs: number]> = [
   ['intro', -3000],
@@ -49,6 +51,7 @@ export class AlarmScheduler {
     const guild = this.#guild(guildId)
     if (guild.entries.size >= this.#options.maxAlarms) return { result: 'full' }
     const fireAt = startAt + ms
+    if (this.#tooLong(fireAt)) return { result: 'tooLong' }
     if (this.#tooShort(fireAt)) return { result: 'tooShort' }
     if (this.#conflicts(guild, fireAt)) return { result: 'conflict' }
 
@@ -63,6 +66,7 @@ export class AlarmScheduler {
     const guild = this.#guilds.get(guildId)
     const targets = guild ? this.#select(guild, target) : []
     if (!guild || targets.length === 0) return { result: 'notFound' }
+    if (targets.some(entry => this.#tooLong(entry.alarm.fireAt + deltaMs))) return { result: 'tooLong' }
     if (targets.some(entry => this.#tooShort(entry.alarm.fireAt + deltaMs))) return { result: 'tooShort' }
     if (targets.length < guild.entries.size) {
       const moved = new Set(targets)
@@ -108,6 +112,10 @@ export class AlarmScheduler {
       this.#guilds.set(guildId, guild)
     }
     return guild
+  }
+
+  #tooLong (fireAt: number): boolean {
+    return !Number.isFinite(fireAt) || fireAt - this.#options.clock.now() > MAX_DURATION_MS
   }
 
   #tooShort (fireAt: number): boolean {

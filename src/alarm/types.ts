@@ -8,4 +8,4 @@ export type CueKind = 'intro' | 'three' | 'two' | 'now'
 
 export type Cue = { alarmId: number; kind: CueKind; at: number }
 
-export type SchedulerResult = 'ok' | 'full' | 'tooShort' | 'conflict' | 'notFound'
+export type SchedulerResult = 'ok' | 'full' | 'tooShort' | 'tooLong' | 'conflict' | 'notFound'

@@ -63,6 +63,30 @@ test('runs one job per worker at a time', async () => {
   assert.equal(a.calls.length + b.calls.length, 3)
 })
 
+test('a dead worker is replaced instead of taking every later job', async () => {
+  let dead = false
+  const calls: string[] = []
+  const crashing: SttWorker = {
+    run: async packets => {
+      calls.push(`crashing:${packets[0]}`)
+      dead = true
+      throw new Error('worker exited')
+    },
+    close: async () => {},
+    get dead () { return dead },
+  }
+  const fresh = fakeWorker()
+  const pool = new SttPool({ workers: [crashing], respawn: () => fresh.worker })
+  await assert.rejects(pool.transcribe(utterance('a')), /worker exited/)
+  await flush()
+  const next = pool.transcribe(utterance('b'))
+  assert.equal(fresh.calls.length, 1)
+  fresh.calls[0]!.finish(recognized('ok'))
+  assert.equal((await next)?.text, 'ok')
+  assert.deepEqual(calls, ['crashing:a'])
+  assert.equal(pool.respawned, 1)
+})
+
 test('a failing worker rejects its job and keeps serving', async () => {
   const { worker, calls } = fakeWorker()
   const pool = new SttPool({ workers: [worker] })

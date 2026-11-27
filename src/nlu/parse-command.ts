@@ -1,3 +1,4 @@
+import { MAX_DURATION_MS } from '../alarm/scheduler.ts'
 import type { Target } from '../alarm/types.ts'
 import { englishTokens, extractEnglishDuration, extractKoreanDuration } from './numbers.ts'
 import type { WakeMatch } from './wake-word.ts'
@@ -19,8 +20,6 @@ type Grammar = {
   last: RegExp
   ordinals: ReadonlyArray<readonly [RegExp, number]>
 }
-
-const MAX_DURATION_MS = 24 * 60 * 60 * 1000
 
 const KOREAN: Grammar = {
   cancel: /꺼|끄|취소|지워|지우|삭제|없애/,

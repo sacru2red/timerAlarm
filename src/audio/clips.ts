@@ -9,7 +9,7 @@ export type ClipLibrary = Readonly<Record<Lang, Readonly<Record<ClipKind, Clip>>
 
 export const LANGS: readonly Lang[] = ['ko', 'en']
 export const CUE_KINDS: readonly CueKind[] = ['intro', 'three', 'two', 'now']
-export const RESPONSE_KINDS: readonly ResponseKind[] = ['ok', 'full', 'tooShort', 'conflict', 'notFound', 'unknown']
+export const RESPONSE_KINDS: readonly ResponseKind[] = ['ok', 'full', 'tooShort', 'tooLong', 'conflict', 'notFound', 'unknown']
 export const CLIP_KINDS: readonly ClipKind[] = [...CUE_KINDS, ...RESPONSE_KINDS]
 export const FRAME_MS = 20
 export const MAX_CUE_CLIP_MS = 850
@@ -51,7 +51,12 @@ export function clipProblems (dir: string): string[] {
   return LANGS.flatMap(lang => CLIP_KINDS.flatMap(kind => {
     const path = clipPath(dir, lang, kind)
     if (!existsSync(path)) return [`${path} is missing`]
-    const packets = unpackFrames(readFileSync(path))
+    let packets: Buffer[]
+    try {
+      packets = unpackFrames(readFileSync(path))
+    } catch (error) {
+      return [`${path} is corrupt: ${(error as Error).message}`]
+    }
     if (packets.length === 0) return [`${path} is empty`]
     const durationMs = packets.length * FRAME_MS
     return CUE_KINDS.includes(kind as CueKind) && durationMs > MAX_CUE_CLIP_MS ? [`${path} is ${durationMs}ms, cue clips must be <= ${MAX_CUE_CLIP_MS}ms`] : []

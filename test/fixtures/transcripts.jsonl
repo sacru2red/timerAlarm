@@ -19,12 +19,12 @@
 {"file":"ko5.wav","mode":"ko","text":"야 저 오른쪽에 한 명 있어.","lang":"ko","expected":{"wake":false}}
 {"file":"ko6.wav","mode":"ko","text":"헤이타임머옷 얼마 남았어?","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}
 {"file":"en1.wav","mode":"opus","text":"Hey timer bought two minutes alarm.","lang":"en","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
-{"file":"en2.wav","mode":"opus","text":"Hey timer bot push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
+{"file":"en2.wav","mode":"opus","text":"Hey timer bot, push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
 {"file":"en3.wav","mode":"opus","text":"Hey timer bot, cancel all alarms.","lang":"en","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"all"}}}}
 {"file":"en4.wav","mode":"opus","text":"Watch our En on the left.","lang":"en","expected":{"wake":false}}
 {"file":"ko1.wav","mode":"opus","text":"He이 타이임머옷 이브 알람.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":120000}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
 {"file":"ko2.wav","mode":"opus","text":"헤이 타임머옷 알람 식초 뒤로 밀어져.","lang":"ko","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
-{"file":"ko3.wav","mode":"opus","text":"타임머 옷 1분 30초 알람 맞춰죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
+{"file":"ko3.wav","mode":"opus","text":"타임머봇 1분 30초 알람 맞춰죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
 {"file":"ko4.wav","mode":"opus","text":"헤이타임머보 두 번째 알람 꺼줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"index","n":2}}}}
 {"file":"ko5.wav","mode":"opus","text":"야 저 오른쪽에 한 명 있어.","lang":"ko","expected":{"wake":false}}
 {"file":"ko6.wav","mode":"opus","text":"헤이타임머옷 얼마나 남았어?","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}

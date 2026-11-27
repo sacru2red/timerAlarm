@@ -28,7 +28,8 @@ export function startCapture ({ guildId, receiver, shouldListen, onUtterance, no
     let packets: Buffer[] = []
     let lastAt = now()
     const flush = () => {
-      if (packets.length >= MIN_PACKETS) onUtterance({ guildId, userId, packets, endedAt: lastAt })
+      // Re-check consent: /voice off can arrive while this stream is still open.
+      if (packets.length >= MIN_PACKETS && shouldListen(userId)) onUtterance({ guildId, userId, packets, endedAt: lastAt })
       packets = []
     }
     stream.on('data', (packet: Buffer) => {

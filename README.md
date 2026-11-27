@@ -14,7 +14,7 @@ Start with the wake word ("헤이 타이머봇" / "hey timer bot"). If you only 
 | Cancel | 두 번째 알람 꺼줘, 알람 다 꺼줘 | cancel all alarms |
 | List | 얼마 남았어 | how long is left |
 
-Each server can hold 3 alarms (`MAX_ALARMS`), at least 5 seconds away and at least 4 seconds apart so countdowns never overlap. The slash commands `/alarm set|shift|cancel|list` do the same without voice.
+Each server can hold 3 alarms (`MAX_ALARMS`), at least 5 seconds away and at least 4 seconds apart so countdowns never overlap. The slash commands `/alarm set|shift|cancel|list` do the same without voice. Alarms go up to 24 hours. Only people in the bot's voice channel (or with the Move Members permission, or when the channel is empty) can use `/leave`, change alarms, or `/join` the bot away to another channel. The bot leaves after 30 minutes without alarms or commands so other servers can use the slot.
 
 ## Privacy
 

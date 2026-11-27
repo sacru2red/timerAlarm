@@ -6,6 +6,7 @@
   { "file": "ko/ok.wav", "lang": "ko", "voice": "F1", "text": "네" },
   { "file": "ko/full.wav", "lang": "ko", "voice": "F1", "text": "알람이 꽉 찼어요" },
   { "file": "ko/tooShort.wav", "lang": "ko", "voice": "F1", "text": "너무 짧아요" },
+  { "file": "ko/tooLong.wav", "lang": "ko", "voice": "F1", "text": "너무 길어요" },
   { "file": "ko/conflict.wav", "lang": "ko", "voice": "F1", "text": "다른 알람과 너무 가까워요" },
   { "file": "ko/notFound.wav", "lang": "ko", "voice": "F1", "text": "그 알람이 없어요" },
   { "file": "ko/unknown.wav", "lang": "ko", "voice": "F1", "text": "잘 못 알아들었어요" },
@@ -16,6 +17,7 @@
   { "file": "en/ok.wav", "lang": "en", "voice": "F1", "text": "Okay" },
   { "file": "en/full.wav", "lang": "en", "voice": "F1", "text": "Alarms are full" },
   { "file": "en/tooShort.wav", "lang": "en", "voice": "F1", "text": "Too short" },
+  { "file": "en/tooLong.wav", "lang": "en", "voice": "F1", "text": "Too long" },
   { "file": "en/conflict.wav", "lang": "en", "voice": "F1", "text": "Too close to another alarm" },
   { "file": "en/notFound.wav", "lang": "en", "voice": "F1", "text": "No such alarm" },
   { "file": "en/unknown.wav", "lang": "en", "voice": "F1", "text": "Sorry, I didn't catch that" }

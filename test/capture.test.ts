@@ -80,3 +80,12 @@ test('end and close together emit the utterance once', () => {
   streams.get('u')?.emit('close')
   assert.equal(utterances.length, 1)
 })
+
+test('an utterance still open when the user opts out is dropped', () => {
+  let consented = true
+  const { speak, end, utterances } = setup(() => consented)
+  speak('a', 50)
+  consented = false
+  end('a')
+  assert.deepEqual(utterances, [])
+})
