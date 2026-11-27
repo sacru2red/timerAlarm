@@ -22,7 +22,6 @@ function setup (t: TestContext) {
   const tick = (ms: number) => {
     for (let i = 0; i < ms; i++) t.mock.timers.tick(1)
   }
-  // [kind, time it was emitted] pairs, the shape most assertions care about.
   const fired = () => emitted.map(e => [e.kind, e.firedAt])
   return { scheduler, emitted, tick, fired }
 }
@@ -89,13 +88,24 @@ test('an all shift that makes any alarm too short changes nothing', t => {
   assert.deepEqual(scheduler.list('A').map(a => a.fireAt), [30_000, 60_000])
 })
 
-test('an all shift moves every alarm by the same delta', t => {
-  const { scheduler } = setup(t)
+test('an all shift moves every alarm and its cues by the same delta without a conflict', t => {
+  const { scheduler, tick, emitted } = setup(t)
   scheduler.set('A', 30_000, 'ko')
   scheduler.set('A', 34_000, 'ko')
   const outcome = scheduler.shift('A', 10_000, { by: 'all' })
   assert.equal(outcome.result, 'ok')
   assert.deepEqual(scheduler.list('A').map(a => a.fireAt), [40_000, 44_000])
+  tick(60_000)
+  assert.deepEqual(emitted.map(e => [e.alarmId, e.kind, e.firedAt]), [
+    [1, 'intro', 37_000], [1, 'three', 38_000], [1, 'two', 39_000], [1, 'now', 40_000],
+    [2, 'intro', 41_000], [2, 'three', 42_000], [2, 'two', 43_000], [2, 'now', 44_000],
+  ])
+})
+
+test('shifting a lone alarm by 2 seconds does not conflict with itself', t => {
+  const { scheduler } = setup(t)
+  scheduler.set('A', 10_000, 'ko')
+  assert.deepEqual(scheduler.shift('A', 2_000, { by: 'next' }), { result: 'ok', alarms: [{ id: 1, fireAt: 12_000, lang: 'ko' }] })
 })
 
 test('a single shift landing less than 4 seconds from another alarm is a conflict', t => {
@@ -162,11 +172,10 @@ test('every target is notFound when the guild has no alarms', t => {
   }
 })
 
-test('a set in guild A does not change guild B', t => {
+test('guilds keep separate alarms and ids, and the same fireAt in two guilds is not a conflict', t => {
   const { scheduler, tick, emitted } = setup(t)
   scheduler.set('A', 10_000, 'ko')
   assert.deepEqual(scheduler.list('B'), [])
-  // Same fireAt is not a conflict across guilds, and ids are counted per guild.
   assert.deepEqual(scheduler.set('B', 10_000, 'en'), { result: 'ok', alarms: [{ id: 1, fireAt: 10_000, lang: 'en' }] })
   scheduler.cancel('B', { by: 'all' })
   tick(10_000)

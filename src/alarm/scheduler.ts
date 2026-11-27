@@ -14,7 +14,6 @@ export type SchedulerOptions = {
   onCue: (guildId: string, cue: Cue, alarm: Alarm) => void
 }
 
-// alarms are copies of the affected alarms: the new one for set, the moved ones for shift, the removed ones for cancel.
 export type Outcome =
   | { result: 'ok'; alarms: Alarm[] }
   | { result: Exclude<SchedulerResult, 'ok'> }
@@ -46,11 +45,10 @@ export class AlarmScheduler {
     this.#options = options
   }
 
-  // from is the moment the duration counts from (the utterance's endedAt); defaults to now.
-  set (guildId: string, ms: number, lang: Lang, from = this.#options.clock.now()): Outcome {
+  set (guildId: string, ms: number, lang: Lang, startAt = this.#options.clock.now()): Outcome {
     const guild = this.#guild(guildId)
     if (guild.entries.size >= this.#options.maxAlarms) return { result: 'full' }
-    const fireAt = from + ms
+    const fireAt = startAt + ms
     if (this.#tooShort(fireAt)) return { result: 'tooShort' }
     if (this.#conflicts(guild, fireAt)) return { result: 'conflict' }
 
@@ -66,7 +64,6 @@ export class AlarmScheduler {
     const targets = guild ? this.#select(guild, target) : []
     if (!guild || targets.length === 0) return { result: 'notFound' }
     if (targets.some(entry => this.#tooShort(entry.alarm.fireAt + deltaMs))) return { result: 'tooShort' }
-    // Moving every alarm by the same delta keeps their gaps, so only a partial shift can conflict.
     if (targets.length < guild.entries.size) {
       const moved = new Set(targets)
       const others = [...guild.entries.values()].filter(entry => !moved.has(entry))
@@ -97,7 +94,6 @@ export class AlarmScheduler {
     return guild ? this.#sorted(guild).map(entry => ({ ...entry.alarm })) : []
   }
 
-  // Drops every alarm of the guild and its pending cues (used when the voice connection is lost).
   clear (guildId: string): void {
     const guild = this.#guilds.get(guildId)
     if (!guild) return
@@ -137,16 +133,10 @@ export class AlarmScheduler {
     return entry ? [entry] : []
   }
 
-  // Starts the cue chain at the first cue whose time has not passed. The now cue is never skipped.
   #schedule (guildId: string, guild: Guild, entry: Entry): void {
-    const now = this.#options.clock.now()
-    let index = 0
-    while (index < CUES.length - 1 && entry.alarm.fireAt + CUES[index]![1] < now) index++
-    this.#arm(guildId, guild, entry, index)
+    this.#arm(guildId, guild, entry, 0)
   }
 
-  // Each fired cue arms the next one. The delay is recomputed from the absolute cue time every time,
-  // so a late timer does not push the following cues back.
   #arm (guildId: string, guild: Guild, entry: Entry, index: number): void {
     const [kind, offsetMs] = CUES[index]!
     const cue: Cue = { alarmId: entry.alarm.id, kind, at: entry.alarm.fireAt + offsetMs }
