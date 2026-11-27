@@ -84,14 +84,24 @@ Alarms and voice connections live in memory. A restart clears them; the consent 
 npm run lint && npm run typecheck && npm test
 npm run stt-bench -- --threads 1 --runs 7          # decode timing per WAV
 npm run stt-bench -- --via-pool --emit-fixtures    # Opus path through the worker pool
+npm run load-test -- --guilds 1,4,8 --seconds 60   # four-player LoL scenario across N guilds
 ```
 
 `test/fixtures/transcripts.jsonl` holds real model outputs with the expected wake word and intent. Lines the rules still get wrong are marked `knownMiss` with their current `actual` result, so any change in either direction fails a test.
 
 ## Capacity
 
-To be measured on the VM (plan Step 14). The bot is unverified, so Discord limits it to 100 servers.
+`npm run load-test` replays `test/fixtures/lol`: four players talking over each other for a minute, 28 utterances per guild per minute, while every guild also fires a fake alarm cue each second. Results on the Always Free VM (A1.Flex, 2 OCPU, 12 GB), 60 s per run:
+
+| Guilds | STT workers | Latency p95 | Dropped | Event loop lag p99 | Cue lateness max | Process CPU |
+|---|---|---|---|---|---|---|
+| 10 | 1 | 305 ms | 0% | 1.1 ms | 0.7 ms | 38% |
+| 18 | 1 | 1148 ms | 0% | 1.1 ms | 0.9 ms | 63% |
+| 22 | 1 | 2090 ms | 6.3% | 1.2 ms | 1.7 ms | 71% |
+| 36 | 2 | 1470 ms | 0% | 1.2 ms | 2.2 ms | 127% |
+
+The limit is the single STT worker (decode p95 stays about 210 ms; waiting in the queue is what grows). The main thread stays idle in this test, but it does not include receiving and decrypting live Discord voice, so `MAX_ACTIVE_GUILDS` stays at 3 until that is measured with a real channel. CPU is a percentage of one core. The bot is unverified, so Discord limits it to 100 servers.
 
 ## Licenses
 
-Code: MIT. The SenseVoice model is distributed under the [FunASR model license](https://github.com/modelscope/FunASR?tab=readme-ov-file#license).
+Code: MIT. The SenseVoice model is distributed under the [FunASR model license](https://github.com/modelscope/FunASR?tab=readme-ov-file#license). The bot's voice clips and the load-test audio are machine-generated with [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) (OpenRAIL-M); see [assets/voice/SOURCE.md](assets/voice/SOURCE.md).
