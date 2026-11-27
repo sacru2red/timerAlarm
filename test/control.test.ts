@@ -1,6 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { IDLE_MS, isIdle, joinRefusal, mayControl } from '../src/discord/control.ts'
+import { isIdle, joinRefusal, mayControl } from '../src/discord/control.ts'
+
+const THIRTY_MINUTES = 30 * 60_000
 
 const busy = { id: 'game', humans: 4 }
 const outsider = { channelId: 'other', canMoveMembers: false }
@@ -17,6 +19,7 @@ test('join is refused while connecting, when already there, when pulled away fro
   const base = { targetId: 'lobby', current: undefined, caller: { channelId: 'lobby', canMoveMembers: false }, joining: false, active: 0, maxActive: 3 }
   assert.equal(joinRefusal(base), undefined)
   assert.equal(joinRefusal({ ...base, joining: true }), 'joining')
+  assert.equal(joinRefusal({ ...base, joining: true, current: { id: 'lobby', humans: 2 } }), 'joining')
   assert.equal(joinRefusal({ ...base, current: { id: 'lobby', humans: 2 } }), 'alreadyHere')
   assert.equal(joinRefusal({ ...base, current: busy }), 'inUse')
   assert.equal(joinRefusal({ ...base, current: { id: 'game', humans: 0 } }), undefined)
@@ -26,7 +29,7 @@ test('join is refused while connecting, when already there, when pulled away fro
 })
 
 test('a guild is idle only with no alarms and no activity for 30 minutes', () => {
-  assert.equal(isIdle(0, 0, IDLE_MS), false)
-  assert.equal(isIdle(0, 0, IDLE_MS + 1), true)
-  assert.equal(isIdle(1, 0, IDLE_MS * 10), false)
+  assert.equal(isIdle(0, 0, THIRTY_MINUTES), false)
+  assert.equal(isIdle(0, 0, THIRTY_MINUTES + 1), true)
+  assert.equal(isIdle(1, 0, THIRTY_MINUTES * 10), false)
 })

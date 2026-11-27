@@ -47,7 +47,6 @@ function clips (): ClipLibrary {
 }
 
 function setup () {
-  let now = 0
   let nextCue: number | undefined
   const player = new FakePlayer()
   const texts: string[] = []
@@ -57,7 +56,7 @@ function setup () {
     nextCueAt: () => nextCue,
     sendText: text => texts.push(text),
     log: () => {},
-    now: () => now,
+    now: () => 0,
   })
   const names = new Map<AudioResource, Promise<string>>()
   const nameOf = (resource: AudioResource) => {
@@ -76,7 +75,6 @@ function setup () {
     texts,
     played,
     settled,
-    advance: (ms: number) => { now += ms },
     setNextCue: (at: number | undefined) => { nextCue = at },
   }
 }
@@ -148,7 +146,7 @@ test('a cue cuts off a reply that is playing', async () => {
   assert.deepEqual(await played(), ['ko:ok', 'ko:intro'])
 })
 
-test('stop silences the player and settles both the playing and the waiting reply', async () => {
+test('stop silences the player and settles a waiting reply without playing it', async () => {
   const { announcer, player, played, settled } = setup()
   announcer.cue(...cue('now'))
   const waiting = settled(announcer.respond(reply('ok')))
@@ -157,4 +155,13 @@ test('stop silences the player and settles both the playing and the waiting repl
   assert.equal(waiting(), true)
   assert.equal(player.status, AudioPlayerStatus.Idle)
   assert.deepEqual(await played(), ['ko:now'])
+})
+
+test('stop settles a reply that is playing', async () => {
+  const { announcer, player, settled } = setup()
+  const playing = settled(announcer.respond(reply('ok')))
+  announcer.stop()
+  await tick()
+  assert.equal(playing(), true)
+  assert.equal(player.status, AudioPlayerStatus.Idle)
 })
