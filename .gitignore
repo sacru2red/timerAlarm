@@ -1,4 +1,6 @@
-.glitchdotcom.json
-.node-gyp
 node_modules
 .env
+models/
+data/
+.omc/
+.claude/worktrees/

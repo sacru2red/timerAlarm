@@ -1,0 +1,12 @@
+[
+  { "file": "en1.wav", "lang": "en", "voice": "M3", "text": "Hey timer bot, two minutes alarm." },
+  { "file": "en2.wav", "lang": "en", "voice": "F4", "text": "Hey timer bot, push back 10 seconds." },
+  { "file": "en3.wav", "lang": "en", "voice": "M4", "text": "Hey timer bot, cancel all alarms." },
+  { "file": "en4.wav", "lang": "en", "voice": "F5", "text": "Watch out, enemy on the left." },
+  { "file": "ko1.wav", "lang": "ko", "voice": "M3", "text": "헤이 타이머봇, 2분 알람." },
+  { "file": "ko2.wav", "lang": "ko", "voice": "F4", "text": "헤이 타이머봇, 알람 10초 뒤로 밀어줘." },
+  { "file": "ko3.wav", "lang": "ko", "voice": "M4", "text": "타이머봇, 1분 30초 알람 맞춰줘." },
+  { "file": "ko4.wav", "lang": "ko", "voice": "F5", "text": "헤이 타이머봇, 두 번째 알람 꺼줘." },
+  { "file": "ko5.wav", "lang": "ko", "voice": "M5", "text": "야 적이 오른쪽에 한 명 있어." },
+  { "file": "ko6.wav", "lang": "ko", "voice": "F3", "text": "헤이 타이머봇, 얼마 남았어?" }
+]

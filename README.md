@@ -1,109 +1,108 @@
-## 디스코드 앱, 봇 만들기
+# Timer Alarm
 
-https://discord.com/developers/docs/getting-started
+A Discord bot that sits in a voice channel and counts down your alarms. Say "헤이 타이머봇, 2분 알람" or "hey timer bot, two minutes alarm", and three seconds before the alarm it says "알람입니다, 3, 2, 지금!". Speech is recognized on the bot's own server with [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) and SenseVoice. No audio leaves the server.
 
-## 로컬에서 구동하기
+## Voice commands
 
-### Windows
+Start with the wake word ("헤이 타이머봇" / "hey timer bot"). If you only say the wake word, the bot answers and waits 5 seconds for the command.
 
-[chocolatey 다운로드](https://chocolatey.org/install)
-nodejs 설치
+| Intent | Korean | English |
+| --- | --- | --- |
+| Set | 2분 알람, 1분 30초 맞춰줘 | two minutes alarm, set a timer for 90 seconds |
+| Later | 알람 10초 뒤로 밀어줘, 두 번째 알람 1분 늦춰줘 | push back 10 seconds, delay the second alarm 30 seconds |
+| Earlier | 10초 당겨줘 | bring forward 20 seconds |
+| Cancel | 두 번째 알람 꺼줘, 알람 다 꺼줘 | cancel all alarms |
+| List | 얼마 남았어 | how long is left |
 
-```
-choco install nodejs-lts
-```
+Each server can hold 3 alarms (`MAX_ALARMS`), at least 5 seconds away and at least 4 seconds apart so countdowns never overlap. The slash commands `/alarm set|shift|cancel|list` do the same without voice. Alarms go up to 24 hours. Only people in the bot's voice channel (or with the Move Members permission, or when the channel is empty) can use `/leave`, change alarms, or `/join` the bot away to another channel. The bot leaves after 30 minutes without alarms or commands so other servers can use the slot.
 
-git 설치
+## Privacy
 
-```
-choco install git
-```
+The bot only listens to people who opt in, per server, with the button on the `/join` message or `/voice on`. `/voice off` stops it. Audio and transcripts are never stored; the only stored data is the list of opted-in `server:user` IDs. `/privacy` shows the details in Discord. Users listed in `DEBUG_DUMP_USERS` have their utterances saved to `data/dumps/` for tuning; leave it empty in production.
 
-저장소 복제
+## Setup
 
-```
-mkdir timerAlarm
-cd timerAlarm
-git clone https://github.com/sacru2red/timerAlarm
-```
+1. Create an application at <https://discord.com/developers/applications>, add a bot, and copy its token and the application ID. No privileged intents are needed.
+2. Install Node 24 or later, then:
 
-패키지 설치
+   ```sh
+   npm ci
+   cp .env.sample .env        # fill DISCORD_TOKEN, APP_ID, DEV_GUILD_ID
+   npm run fetch-model        # 239 MB, checked by sha256
+   ```
 
-```
-npm install
-```
+3. Voice clips are committed in `assets/voice/<lang>/<kind>.opusf`. They are synthesized with Supertonic 3; [assets/voice/SOURCE.md](assets/voice/SOURCE.md) explains how to regenerate them. `npm run check-clips` verifies them.
+4. Register commands and run:
 
-env 파일 수정 (앱 만들기에서 설정된 값으로)
+   ```sh
+   npm run deploy-commands -- --guild   # development server only, instant
+   npm run dev
+   ```
 
-```
-/.env.sample => /.env copy and edit
-```
+Invite link permissions: View Channel, Connect, Speak, Send Messages, plus the `applications.commands` scope.
 
-ngrok 설치
+For a public launch, clear the development copy first so commands do not show twice, then register globally:
 
-```
-choco install ngrok
-```
-
-ngrok 실행
-
-```
-ngrok http 3000
+```sh
+npm run deploy-commands -- --clear-guild
+npm run deploy-commands -- --global
 ```
 
-Forwarding 값 확인 후 디스코드 앱의 인터랙션 엔드포인트 URL(INTERACTIONS ENDPOINT URL) 변경
+## Configuration
 
-```
-Forwarding                    https://b25e-220-119-201-230.jp.ngrok.io -> http://localhost:3000
-```
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `DISCORD_TOKEN`, `APP_ID` | required | Bot credentials |
+| `DEV_GUILD_ID` | | Server for `deploy-commands --guild` |
+| `MAX_ALARMS` | 3 | Alarms per server |
+| `MAX_ACTIVE_GUILDS` | 3 | Voice connections at once; `/join` is refused above this |
+| `AUDIO_LATENCY_MS` | 0 | Playback latency calibration |
+| `MODEL_DIR` | `models/sense-voice` | SenseVoice files |
+| `DATA_DIR` | `data` | Consent list and debug dumps |
+| `DEBUG_DUMP_USERS` | | Comma-separated user IDs whose audio is dumped |
+| `HEARTBEAT_URL` | | healthchecks.io ping URL, hit every 5 minutes |
 
-```
-INTERACTIONS ENDPOINT URL
-https://b25e-220-119-201-230.jp.ngrok.io/interactions
-```
+## Deploying to Oracle Cloud Always Free
 
-### Run the app
+1. Sign up with Seoul or Chuncheon as the home region. Always Free instances only exist in the home region, and the home region cannot change.
+2. Create a VM.Standard.A1.Flex instance (Ubuntu 24.04, aarch64) and check that the shape shows "Always Free-eligible". Open only SSH inbound.
+3. Upgrade to Pay As You Go and set a $1 budget alert. Idle Always Free instances can be reclaimed (CPU, network and memory under 20% for 7 days); a reclaimed instance is only stopped, so start it again from the console.
+4. Install Docker, run `sudo systemctl enable docker`, clone this repo, copy `.env`, then:
 
-After your credentials are added, go ahead and run the app:
+   ```sh
+   docker compose up -d --build
+   docker compose logs bot     # dependency report: opus, aes-256-gcm, davey
+   ```
 
-```
-node app.js
-```
+   Update with `git pull && docker compose up -d --build`.
 
-> ⚙️ A package [like `nodemon`](https://github.com/remy/nodemon), which watches for local changes and restarts your app, may be helpful while locally developing.
+Alarms and voice connections live in memory. A restart clears them; the consent list survives in the `bot-data` volume.
 
-### Set up interactivity
+## Development
 
-The project needs a public endpoint where Discord can send requests. To develop and test locally, you can use something like [`ngrok`](https://ngrok.com/) to tunnel HTTP traffic.
-
-Install ngrok if you haven't already, then start listening on port `3000`:
-
-```
-ngrok http 3000
-```
-
-You should see your connection open:
-
-```
-Tunnel Status                 online
-Version                       2.0/2.0
-Web Interface                 http://127.0.0.1:4040
-Forwarding                    http://1234-someurl.ngrok.io -> localhost:3000
-Forwarding                    https://1234-someurl.ngrok.io -> localhost:3000
-
-Connections                  ttl     opn     rt1     rt5     p50     p90
-                              0       0       0.00    0.00    0.00    0.00
+```sh
+npm run lint && npm run typecheck && npm test
+npm run stt-bench -- --threads 1 --runs 7          # decode timing per WAV
+npm run stt-bench -- --via-pool --emit-fixtures    # Opus path through the worker pool
+npm run load-test -- --guilds 1,4,8 --seconds 60   # four-player LoL scenario across N guilds
 ```
 
-Copy the forwarding address that starts with `https`, in this case `https://1234-someurl.ngrok.io`, then go to your [app's settings](https://discord.com/developers/applications).
+`test/fixtures/transcripts.jsonl` holds real model outputs with the expected wake word and intent. Lines the rules still get wrong are marked `knownMiss` with their current `actual` result, so any change in either direction fails a test.
 
-On the **General Information** tab, there will be an **Interactions Endpoint URL**. Paste your ngrok address there, and append `/interactions` to it (`https://1234-someurl.ngrok.io/interactions` in the example).
+## Capacity
 
-Click **Save Changes**, and your app should be ready to run 🚀
+`npm run load-test` replays `test/fixtures/lol`: four players talking over each other for a minute, 28 utterances per guild per minute, while every guild also fires a fake alarm cue each second. Results on the Always Free VM (A1.Flex, 2 OCPU, 12 GB), 60 s per run:
 
-## Other resources
+| Guilds | STT workers | Latency p95 | Dropped | Event loop lag p99 | Cue lateness max | Process CPU |
+|---|---|---|---|---|---|---|
+| 10 | 1 | 341 ms | 0% | 1.1 ms | 0.1 ms | 70% |
+| 14 | 1 | 670 ms | 0% | 0.7 ms | 1.0 ms | 97% |
+| 16 | 1 | 2119 ms | 7.6% | 0.6 ms | 0.7 ms | 100% |
+| 24 | 2 | 433 ms | 0% | 1.2 ms | 1.4 ms | 176% |
+| 28 | 2 | 2031 ms | 0.9% | 1.3 ms | 14.7 ms | 197% |
 
-- Read **[the documentation](https://discord.com/developers/docs/intro)** for in-depth information about API features.
-- Browse the `examples/` folder in this project for smaller, feature-specific code examples
-- Join the **[Discord Developers server](https://discord.gg/discord-developers)** to ask questions about the API, attend events hosted by the Discord API team, and interact with other devs.
-- Check out **[community resources](https://discord.com/developers/docs/topics/community-resources#community-resources)** for language-specific tools maintained by community members.
+The limit is the single STT worker (decode p95 stays about 210 ms; waiting in the queue is what grows). The main thread stays idle in this test, but it does not include receiving and decrypting live Discord voice, so `MAX_ACTIVE_GUILDS` stays at 3 until that is measured with a real channel. CPU is a percentage of one core. The bot is unverified, so Discord limits it to 100 servers.
+
+## Licenses
+
+Code: MIT. The SenseVoice model is distributed under the [FunASR model license](https://github.com/modelscope/FunASR?tab=readme-ov-file#license). The bot's voice clips and the load-test audio are machine-generated with [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) (OpenRAIL-M); see [assets/voice/SOURCE.md](assets/voice/SOURCE.md).
