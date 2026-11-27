@@ -10,6 +10,7 @@ const target = (option: SlashCommandStringOption) => option
     { name: '1', value: '1' },
     { name: '2', value: '2' },
     { name: '3', value: '3' },
+    { name: 'last', value: 'last', name_localizations: { ko: '마지막' } },
     { name: 'all', value: 'all', name_localizations: { ko: '전부' } }
   )
 

@@ -235,6 +235,7 @@ function parseDuration (input: string): number | undefined {
 
 function slashTarget (value: string | null): Target {
   if (value === 'all') return { by: 'all' }
+  if (value === 'last') return { by: 'last' }
   if (value === '1' || value === '2' || value === '3') return { by: 'index', n: Number(value) }
   return { by: 'next' }
 }

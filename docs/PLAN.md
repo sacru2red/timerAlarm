@@ -25,7 +25,7 @@ type Intent =
   | { kind: 'cancel'; target: Target }
   | { kind: 'list' }
   | { kind: 'unknown' }
-type Target = { by: 'next' } | { by: 'index'; n: number } | { by: 'all' }   // index는 명령 시점의 fireAt 오름차순 1부터
+type Target = { by: 'next' } | { by: 'index'; n: number } | { by: 'last' } | { by: 'all' }   // index는 명령 시점의 fireAt 오름차순 1부터
 type Alarm = { id: number; fireAt: number; lang: Lang }                       // id는 길드별 증가 카운터
 type Cue = { alarmId: number; kind: 'intro' | 'three' | 'two' | 'now'; at: number }
 type SchedulerResult = 'ok' | 'full' | 'tooShort' | 'conflict' | 'notFound'
@@ -71,6 +71,21 @@ receiver(Opus 패킷, 메인 스레드는 모으기만 함)
 
 ## 3. 실행·검증 체크리스트
 
+### 진행 현황 (2026-11-27, 브랜치 `feat/core`)
+
+- 완료하고 검증함: Step 1~7, 10. 테스트 124개 통과.
+- 코드는 있고 실환경 검증이 남음:
+  - Step 8a: SAPI 개발 클립으로 cue 클립 140~620ms 확인. 공개용 녹음 클립이 없다.
+  - Step 8b, 11: 봇, Announcer, 세션 로직 작성. 세션 규칙은 단위 테스트로 확인. 가짜 토큰으로 기동하면 dependency report(opus, aes-256-gcm, davey)까지 정상. Discord 실채널 검증이 남았다.
+  - Step 9: 이 PC 기준 Opus 경로 3~4초 발화 중앙값 194~264ms, p95 최대 333ms. fetch-model의 sha256 검증과 재실행 건너뜀 확인. VM 측정이 남았다.
+  - Step 13: 로컬 x86 Docker 빌드 성공. 이미지에 `.env`가 없고 `data`는 빈 마운트 지점이며 non-root(uid 1000)로 실행한다. 클립이 없으면 `check-clips`에서 빌드가 실패한다. ARM VM 검증이 남았다.
+  - Step 15: CI, `docs/privacy.md`, README 작성. Pages 공개와 전역 등록이 남았다.
+- 계획과 달라진 점:
+  - 대상에 `{ by: 'last' }`(마지막/last)를 추가했다.
+  - 후속 명령 대기 창은 웨이크워드가 끝난 시점부터 ok 클립이 끝나고 5초까지다. 클립 재생 중에 말을 시작해도 받는다.
+  - 클립이 있는지는 단위 테스트 대신 `npm run check-clips`로 확인하고, Docker 빌드에서 실행한다.
+  - `AUDIO_LATENCY_MS`만큼 cue 타이머를 일찍 발동한다.
+
 ### Phase 0. 인프라
 
 - [ ] **Step 0. Oracle Cloud 가입과 A1 VM.** 가입할 때 홈 리전을 춘천이나 서울로 정한다. Always Free 인스턴스는 홈 리전에서만 만들 수 있고 홈 리전은 바꿀 수 없다. 서울과 춘천은 가용 도메인이 1개라 A1 용량이 없으면 1 OCPU/6GB로 줄이거나 시간을 두고 다시 시도하는 수밖에 없다. 다른 리전에는 절대 만들지 않는다. Ubuntu 24.04 aarch64, 인바운드는 SSH만 연다. 기본 결정은 PAYG 업그레이드와 $1 예산 알림이다. 유휴 회수 기준(7일간 CPU p95, 네트워크, 메모리가 모두 20% 미만)에 대기 중인 봇이 걸릴 수 있기 때문이다. PAYG가 회수를 면제한다는 문서가 없어도 이 결정은 유지한다. 회수되면 인스턴스가 정지될 뿐 부트 볼륨은 남으므로 콘솔에서 다시 시작하는 절차를 README에 적는다. Docker 서비스를 enable한다.
@@ -78,19 +93,19 @@ receiver(Opus 패킷, 메인 스레드는 모으기만 함)
 
 ### Phase 1. 정리와 순수 코어
 
-- [ ] **Step 1. 레거시 삭제와 툴체인.** `app.js`, `commands.js`, `game.js`, `utils.js`, `examples/`, `.glitch-assets`, `shrinkwrap.yaml`, `.eslintrc`를 지운다. 의존성 `express`, `discord-interactions`, `node-fetch`, `dotenv`, `nodemon`, `eslint-config-standard`, `eslint-plugin-import`, `eslint-plugin-n`, `eslint-plugin-promise`를 지운다. `discord.js@^14`, `@discordjs/voice@^0.19.2`, `@discordjs/opus@^0.11`, `sherpa-onnx-node@2.0.3`, `typescript`, `@types/node`, `eslint@^9.22`, `neostandard`를 추가한다. `engines.node`는 `>=24`. `eslint.config.js`(neostandard, ts 켬). `tsconfig.json`은 `noEmit`, `strict`, `erasableSyntaxOnly`, `allowImportingTsExtensions`, `verbatimModuleSyntax`, `module: nodenext`. `.gitignore`에 `models/`, `data/`를 추가한다. 스크립트는 `start`(`node src/index.ts`, 환경변수는 셸이나 compose가 주입), `dev`(`node --env-file=.env --watch src/index.ts`), `test`(`node --test`), `typecheck`, `lint`, `deploy-commands`, `fetch-model`, `encode-clips`, `stt-bench`, `load-test`.
+- [x] **Step 1. 레거시 삭제와 툴체인.** `app.js`, `commands.js`, `game.js`, `utils.js`, `examples/`, `.glitch-assets`, `shrinkwrap.yaml`, `.eslintrc`를 지운다. 의존성 `express`, `discord-interactions`, `node-fetch`, `dotenv`, `nodemon`, `eslint-config-standard`, `eslint-plugin-import`, `eslint-plugin-n`, `eslint-plugin-promise`를 지운다. `discord.js@^14`, `@discordjs/voice@^0.19.2`, `@discordjs/opus@^0.11`, `sherpa-onnx-node@2.0.3`, `typescript`, `@types/node`, `eslint@^10`(neostandard 0.14가 ^9.22와 ^10을 모두 지원), `neostandard`를 추가한다. `engines.node`는 `>=24`. `eslint.config.js`(neostandard, ts 켬). `tsconfig.json`은 `noEmit`, `strict`, `erasableSyntaxOnly`, `allowImportingTsExtensions`, `verbatimModuleSyntax`, `module: nodenext`. `.gitignore`에 `models/`, `data/`를 추가한다. 스크립트는 `start`(`node src/index.ts`, 환경변수는 셸이나 compose가 주입), `dev`(`node --env-file=.env --watch src/index.ts`), `test`(`node --test`), `typecheck`, `lint`, `deploy-commands`, `fetch-model`, `encode-clips`, `stt-bench`, `load-test`.
   - ➔ **Verify**: `npm ci && npm run lint && npm run typecheck && npm test`가 통과한다(빈 테스트 1개 포함). `git ls-files | grep -E "app.js|examples/|eslintrc"` 결과가 없다.
-- [ ] **Step 2. `src/config.ts`, `.env.sample`.** `DISCORD_TOKEN`, `APP_ID`, `DEV_GUILD_ID`, `MAX_ALARMS=3`, `MAX_ACTIVE_GUILDS=3`(Step 14에서 실측값으로 바꿈), `AUDIO_LATENCY_MS=0`(Step 8에서 보정), `MODEL_DIR=models/sense-voice`, `DATA_DIR=data`, `DEBUG_DUMP_USERS`(빈 값이 기본), `HEARTBEAT_URL`(빈 값이 기본)을 받는다. 필수 값이 없으면 키 이름을 출력하고 종료한다.
+- [x] **Step 2. `src/config.ts`, `.env.sample`.** `DISCORD_TOKEN`, `APP_ID`, `DEV_GUILD_ID`, `MAX_ALARMS=3`, `MAX_ACTIVE_GUILDS=3`(Step 14에서 실측값으로 바꿈), `AUDIO_LATENCY_MS=0`(Step 8에서 보정), `MODEL_DIR=models/sense-voice`, `DATA_DIR=data`, `DEBUG_DUMP_USERS`(빈 값이 기본), `HEARTBEAT_URL`(빈 값이 기본)을 받는다. 필수 값이 없으면 키 이름을 출력하고 종료한다.
   - ➔ **Verify**: `test/config.test.ts`. 필수 키 누락 시 오류 메시지에 키 이름은 있고 다른 키의 값은 없다. 숫자 키에 문자열을 넣으면 거절한다.
-- [ ] **Step 3. `scripts/stt-bench.ts`, `test/fixtures/transcripts.jsonl`.** 프로토타입의 bench, lang 스크립트를 하나로 합쳐 저장소에 넣는다. 입력 WAV 목록에 대해 `numThreads`, 반복 횟수, 언어 모드(자동, ko 강제)별로 텍스트, lang, 디코딩 중앙값과 범위를 출력하고, `--emit-fixtures`로 `{ file, mode, text, lang }` 줄을 코퍼스에 추가한다. 프로토타입 WAV 10개(SAPI, `test/fixtures/wav/`에 커밋, 개당 약 110KB)와 두 모드의 출력 20줄로 코퍼스를 시작한다. 줄마다 사람이 `expected: { wake, intent }`(말한 내용 기준의 참값)를 채운다. 현재 규칙으로 맞히지 못하는 줄은 `knownMiss: true`와 현재 결과 `actual`을 함께 적는다(예: ko4 `거죠`). 테스트는 knownMiss가 아닌 줄은 `expected`와 같아야 하고, knownMiss 줄은 `actual`과 같아야 한다. 그래서 놓치는 줄이 늘거나 바뀌면 테스트가 실패한다.
+- [x] **Step 3. `scripts/stt-bench.ts`, `test/fixtures/transcripts.jsonl`.** 프로토타입의 bench, lang 스크립트를 하나로 합쳐 저장소에 넣는다. 입력 WAV 목록에 대해 `numThreads`, 반복 횟수, 언어 모드(자동, ko 강제)별로 텍스트, lang, 디코딩 중앙값과 범위를 출력하고, `--emit-fixtures`로 `{ file, mode, text, lang }` 줄을 코퍼스에 추가한다. 프로토타입 WAV 10개(SAPI, `test/fixtures/wav/`에 커밋, 개당 약 110KB)와 두 모드의 출력 20줄로 코퍼스를 시작한다. 줄마다 사람이 `expected: { wake, intent }`(말한 내용 기준의 참값)를 채운다. 현재 규칙으로 맞히지 못하는 줄은 `knownMiss: true`와 현재 결과 `actual`을 함께 적는다(예: ko4 `거죠`). 테스트는 knownMiss가 아닌 줄은 `expected`와 같아야 하고, knownMiss 줄은 `actual`과 같아야 한다. 그래서 놓치는 줄이 늘거나 바뀌면 테스트가 실패한다.
   - ➔ **Verify**: `npm run stt-bench -- --threads 1 --runs 7 test/fixtures/wav/*.wav`가 파일마다 중앙값과 범위를 출력한다. 계획 1절의 1스레드 수치가 이 출력으로 재현된다. 코퍼스가 20줄이고 모든 줄에 `expected`가 있다.
-- [ ] **Step 4. `src/nlu/numbers.ts`.** 아라비아 숫자, 한자어 숫자(일~구, 십, 백 조합), 고유어 숫자(한, 두, 세, 네, 다섯~열, 스물/스무, 서른, 마흔), "반", 영어 숫자 단어(one~ninety, a/an, and a half)를 정규화한다.
+- [x] **Step 4. `src/nlu/numbers.ts`.** 아라비아 숫자, 한자어 숫자(일~구, 십, 백 조합), 고유어 숫자(한, 두, 세, 네, 다섯~열, 스물/스무, 서른, 마흔), "반", 영어 숫자 단어(one~ninety, a/an, and a half)를 정규화한다.
   - ➔ **Verify**: `node --test test/numbers.test.ts`에서 20개 이상 통과. "이십오"는 25, "스무"는 20, "1분 반"은 90초, "two"는 2, "one and a half minutes"는 90초.
-- [ ] **Step 5. `src/nlu/wake-word.ts`.** 한국어는 공백과 문장부호를 지운 문자열에서 찾는다. 핵심 패턴은 `타이?임?머`다. 그 앞 3글자 안에 `헤이?`가 있거나 뒤 1글자가 `[봇옷뽓보벗]` 중 하나면 웨이크워드로 본다. 단 `보` 뒤에 `[여니면자이]`가 이어지면 접미로 보지 않는다("타이머보여?"). 영어는 소문자로 바꾸고 문장부호를 지운 뒤 `timer ?bot|time a bot|timer but`. 반환값은 웨이크워드 뒤의 나머지 텍스트다.
+- [x] **Step 5. `src/nlu/wake-word.ts`.** 한국어는 공백과 문장부호를 지운 문자열에서 찾는다. 핵심 패턴은 `타이?임?머`다. 그 앞 3글자 안에 `헤이?`가 있거나 뒤 1글자가 `[봇옷뽓보벗]` 중 하나면 웨이크워드로 본다. 단 `보` 뒤에 `[여니면자이]`가 이어지면 접미로 보지 않는다("타이머보여?"). 영어는 소문자로 바꾸고 문장부호를 지운 뒤 `timer ?bot|time a bot|timer but`. 반환값은 웨이크워드 뒤의 나머지 텍스트다.
   - ➔ **Verify**: 코퍼스에서 wake=true인 줄은 전부 감지하고 wake=false인 줄은 전부 감지하지 않는다. 추가 음성 케이스 `헤 타이임머2 분 알람`은 감지, `타이머 맞춰놨어?`, `타이머 몇 분 남았지`, `타이머 보여?`, `타이머보니까 1분 남았네`는 미감지.
-- [ ] **Step 6. `src/nlu/parse-command.ts`.** 한국어는 공백을 지운 나머지 텍스트에 적용한다. set(시간 + 알람/타이머/맞춰/설정, 또는 동사 없이 시간만), shift(+는 밀어/미뤄/늦춰/뒤로/연장, −는 당겨/앞으로/줄여), cancel(꺼/취소/지워/삭제), list(남았/몇 개/목록), 대상(첫/두/세 번째, 1번/2번, 전부/다/모두). 영어는 alarm/timer, push back/delay/postpone/add, bring forward/move up, cancel/stop/clear/delete, how long/time left/list, first/second/all.
+- [x] **Step 6. `src/nlu/parse-command.ts`.** 한국어는 공백을 지운 나머지 텍스트에 적용한다. set(시간 + 알람/타이머/맞춰/설정, 또는 동사 없이 시간만), shift(+는 밀어/미뤄/늦춰/뒤로/연장, −는 당겨/앞으로/줄여), cancel(꺼/취소/지워/삭제), list(남았/몇 개/목록), 대상(첫/두/세 번째, 1번/2번, 전부/다/모두). 영어는 alarm/timer, push back/delay/postpone/add, bring forward/move up, cancel/stop/clear/delete, how long/time left/list, first/second/all.
   - ➔ **Verify**: 코퍼스 전체(knownMiss 규칙 포함)와 테이블 케이스 30개 이상 통과. 필수 케이스는 `알람10초뒤로밀어줘`가 shift +10000 next, `two minutes alarm`이 set 120000, `1분30초알람맞춰줘`와 `1푼30초알람맞춰줘`가 set 90000, `두번째알람꺼줘`가 cancel index 2, `cancel all alarms`가 cancel all, `얼마남았어`가 list. Step 11 실측 전에는 "거죠"를 cancel로 받지 않는다(코퍼스의 ko4 줄은 knownMiss).
-- [ ] **Step 7. `src/alarm/scheduler.ts`.** 2.3절 스케줄러 규칙을 구현한다. 시계(`now()`)와 타이머를 주입받고 길드 ID별로 상태를 나눈다. cue와 응답은 콜백으로 낸다.
+- [x] **Step 7. `src/alarm/scheduler.ts`.** 2.3절 스케줄러 규칙을 구현한다. 시계(`now()`)와 타이머를 주입받고 길드 ID별로 상태를 나눈다. cue와 응답은 콜백으로 낸다.
   - ➔ **Verify**: `test/scheduler.test.ts`(`mock.timers`로 setTimeout과 Date 고정)에서 다음을 확인한다.
     - 2분 알람의 cue 4개가 117000, 118000, 119000, 120000ms에 난다.
     - 4번째 set은 `full`, 4초 미만 간격 set은 `conflict`, 3초짜리 set은 `tooShort`.
@@ -118,7 +133,7 @@ receiver(Opus 패킷, 메인 스레드는 모으기만 함)
 
 - [ ] **Step 9. `scripts/fetch-model.ts`, `src/stt/worker.ts`, `src/stt/pool.ts`.** 모델은 Hugging Face에서 `model.int8.onnx`와 `tokens.txt`만 받고, 고정한 revision과 sha256을 검증해 `MODEL_DIR`에 둔다. worker마다 `OpusEncoder(16000, 1)` 디코더와 sherpa 인식기(1스레드)를 하나씩 둔다. pool은 2.2, 2.3절 규칙(N, 2초 대기 버림)을 따른다. sherpa 결과의 `lang`에서 `<|`와 `|>`를 벗기고 ko/en 외에는 `'other'`로 바꾼다.
   - ➔ **Verify**: `test/pool.test.ts`에서 가짜 worker로 대기 2초 초과분 버림과 N 계산을 확인한다. `npm run stt-bench -- --via-pool --emit-fixtures`로 SAPI WAV를 Opus로 인코딩해 pool에 넣은 출력을 코퍼스의 세 번째 모드(`opus`)로 추가하고, Step 5와 Step 6 테스트가 이 줄들(`1푼` 포함)에서도 통과한다. 이 PC와 VM 양쪽에서 3초 발화 p95 디코딩 시간을 기록하고, VM 목표는 600ms 이하다. VM 측정은 Docker 전 단계라 호스트에 Node 24(NodeSource 패키지)를 설치하고, 저장소를 clone한 뒤 `npm ci && npm run fetch-model`로 준비한다. 목표를 넘으면 Step 14의 실패 분기를 따른다.
-- [ ] **Step 10. `src/voice/capture.ts`.** 동의한 사용자의 speaking 시작 이벤트에서 `subscribe(userId, { end: AfterSilence 800ms })`로 받는다. 이미 구독 중이면(`receiver.subscriptions.has(userId)`) 아무것도 하지 않는다. speaking 'start'는 패킷이 100ms만 끊겨도 다시 나지만 구독 스트림은 800ms 무음까지 유지되고, `subscribe`는 기존 스트림을 그대로 돌려주기 때문이다. 이 확인이 없으면 핸들러가 중복으로 붙어 패킷이 두 번 쌓인다. 패킷을 모아 2.2절 길이 규칙으로 Utterance를 만든다. 봇 계정은 무시한다. `DEBUG_DUMP_USERS`에 있는 사용자의 Utterance는 `data/dumps/`에 Opus 프레임 파일로 저장한다.
+- [x] **Step 10. `src/voice/capture.ts`.** 동의한 사용자의 speaking 시작 이벤트에서 `subscribe(userId, { end: AfterSilence 800ms })`로 받는다. 이미 구독 중이면(`receiver.subscriptions.has(userId)`) 아무것도 하지 않는다. speaking 'start'는 패킷이 100ms만 끊겨도 다시 나지만 구독 스트림은 800ms 무음까지 유지되고, `subscribe`는 기존 스트림을 그대로 돌려주기 때문이다. 이 확인이 없으면 핸들러가 중복으로 붙어 패킷이 두 번 쌓인다. 패킷을 모아 2.2절 길이 규칙으로 Utterance를 만든다. 봇 계정은 무시한다. `DEBUG_DUMP_USERS`에 있는 사용자의 Utterance는 `data/dumps/`에 Opus 프레임 파일로 저장한다.
   - ➔ **Verify**: `test/capture.test.ts`에서 가짜 스트림으로 다음을 확인한다. 19패킷은 버린다. 401패킷은 400 + 1로 나뉘고, 1은 버림 대상이다. 900패킷은 400, 400, 100 세 Utterance가 된다. `endedAt`은 각 조각 마지막 패킷의 수신 시각이다. 동의하지 않은 사용자는 구독하지 않는다. 같은 사용자의 'start'가 스트림이 열린 동안 두 번 나도 data 핸들러는 1개이고, 패킷 50개를 보내면 Utterance의 패킷도 50개다(중복 0).
 - [ ] **Step 11. `src/voice/session.ts`와 실제 음성 측정.** 2.3절 세션 규칙대로 웨이크워드, 파서, 스케줄러, Announcer를 연결한다. 그다음 실제 음성을 두 세션으로 나눠 모은다.
   - 튜닝 세션. 테스트 사용자 2명 이상이 게임 소리를 켠 채 30분 이상 대화하며 명령 발화 30개 이상을 섞는다. 덤프는 `stt-bench --opusf data/dumps/*`로 인식한 뒤 사람이 `expected`를 채워 코퍼스에 추가한다. 웨이크워드 규칙과 파서 규칙은 이 코퍼스로 다시 맞춘다("거죠" 같은 오인식 처리 포함).
