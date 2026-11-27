@@ -55,7 +55,7 @@ export async function startBot (config: Config): Promise<void> {
   const voices = new Map<string, GuildVoice>()
   const scheduler = new AlarmScheduler({
     maxAlarms: config.maxAlarms,
-    clock: systemClock,
+    clock: { ...systemClock, setTimeout: (fn, ms) => systemClock.setTimeout(fn, Math.max(0, ms - config.audioLatencyMs)) },
     onCue: (guildId, cue, alarm) => voices.get(guildId)?.announcer.cue(cue, alarm),
   })
   const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] })
