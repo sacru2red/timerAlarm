@@ -77,7 +77,7 @@ receiver(Opus 패킷, 메인 스레드는 모으기만 함)
 - 코드는 있고 실환경 검증이 남음:
   - Step 8a: SAPI 개발 클립으로 cue 클립 140~620ms 확인. 공개용 녹음 클립이 없다.
   - Step 8b, 11: 봇, Announcer, 세션 로직 작성. 세션 규칙은 단위 테스트로 확인. 가짜 토큰으로 기동하면 dependency report(opus, aes-256-gcm, davey)까지 정상. Discord 실채널 검증이 남았다.
-  - Step 9: 이 PC 기준 Opus 경로 3~4초 발화 중앙값 194~264ms, p95 최대 333ms. fetch-model의 sha256 검증과 재실행 건너뜀 확인. VM 측정이 남았다.
+  - Step 9: 이 PC 기준 Opus 경로 3~4초 발화 중앙값 194~264ms, p95 최대 333ms. fetch-model의 sha256 검증과 재실행 건너뜀 확인. Oracle A1(2 OCPU, aarch64)에서 `--via-pool --runs 20` 결과 2.8~4.0초 발화 중앙값 245~339ms, p95 최대 342ms로 목표(600ms 이하)를 통과했다. VM에서도 테스트 124개가 통과했다.
   - Step 13: 로컬 x86 Docker 빌드 성공. 이미지에 `.env`가 없고 `data`는 빈 마운트 지점이며 non-root(uid 1000)로 실행한다. 클립이 없으면 `check-clips`에서 빌드가 실패한다. ARM VM 검증이 남았다.
   - Step 15: CI, `docs/privacy.md`, README 작성. Pages 공개와 전역 등록이 남았다.
 - 계획과 달라진 점:
