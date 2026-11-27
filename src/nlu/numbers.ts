@@ -1,4 +1,4 @@
-export type DurationMatch = { ms: number; rest: string }
+export type DurationMatch = { ms: number; rest: string; after: string }
 
 const SECOND = 1000
 const MINUTE = 60 * SECOND
@@ -16,9 +16,11 @@ const nativeTens = Object.keys(NATIVE_TENS).join('|')
 const nativeOnes = Object.keys(NATIVE_ONES).sort((a, b) => b.length - a.length).join('|')
 const koreanNumber = `\\d+(?:\\.\\d+)?|[일이삼사오육칠팔구십백]+|(?:${nativeTens})?(?:${nativeOnes})|${nativeTens}`
 const koreanSegment = `(${koreanNumber})(시간|분|푼|초)(반)?`
-const KOREAN_DURATION = new RegExp(`(?:${koreanSegment})+`)
+const KOREAN_DURATION = new RegExp(`(?:${koreanSegment})+`, 'y')
 const KOREAN_SEGMENT = new RegExp(koreanSegment, 'g')
 const NATIVE_NUMBER = new RegExp(`^(${nativeTens})?(${nativeOnes})?$`)
+// A lone Sino digit after 분 is usually the particle 이 ("2분이 남았어"), not seconds.
+const SECONDS_AFTER_MINUTES = /^(?:\d+|[일이삼사오육칠팔구십백]{2,})/
 
 export function parseKoreanNumber (token: string): number | undefined {
   if (/^\d+(\.\d+)?$/.test(token)) return Number(token)
@@ -52,16 +54,35 @@ function parseNative (token: string): number | undefined {
 }
 
 export function extractKoreanDuration (compact: string): DurationMatch | undefined {
-  const found = KOREAN_DURATION.exec(compact)
-  if (!found) return undefined
+  for (let start = 0; start < compact.length; start++) {
+    KOREAN_DURATION.lastIndex = start
+    const found = KOREAN_DURATION.exec(compact)
+    const segments = found ? readKoreanSegments(found[0]) : undefined
+    if (!found || !segments) continue
+    let { ms } = segments
+    let end = start + found[0].length
+    const seconds = segments.endsInMinutes ? SECONDS_AFTER_MINUTES.exec(compact.slice(end))?.[0] : undefined
+    const secondsValue = seconds ? parseKoreanNumber(seconds) : undefined
+    if (secondsValue !== undefined) {
+      ms += secondsValue * SECOND
+      end += seconds!.length
+    }
+    return { ms: Math.round(ms), rest: compact.slice(0, start) + compact.slice(end), after: compact.slice(end) }
+  }
+  return undefined
+}
+
+function readKoreanSegments (text: string): { ms: number; endsInMinutes: boolean } | undefined {
   let ms = 0
-  for (const [, number, unit, half] of found[0].matchAll(KOREAN_SEGMENT)) {
+  let endsInMinutes = false
+  for (const [, number, unit, half] of text.matchAll(KOREAN_SEGMENT)) {
     const value = parseKoreanNumber(number!)
     if (value === undefined) return undefined
     const unitMs = KOREAN_UNITS[unit!]!
     ms += value * unitMs + (half ? unitMs / 2 : 0)
+    endsInMinutes = unitMs === MINUTE && !half
   }
-  return { ms: Math.round(ms), rest: compact.slice(0, found.index) + compact.slice(found.index + found[0].length) }
+  return { ms, endsInMinutes }
 }
 
 const ENGLISH_ONES: Readonly<Record<string, number>> = {
@@ -112,7 +133,10 @@ function readEnglishNumber (tokens: readonly string[], start: number): { value: 
   const word = tokens[start]
   if (word === undefined) return undefined
   if (/^\d+(\.\d+)?$/.test(word)) return { value: Number(word), next: start + 1 }
-  if (word === 'a' || word === 'an') return { value: 1, next: start + 1 }
+  if (word === 'a' || word === 'an') {
+    const ordinal = tokens[start + 1] === 'second' && /^(?:alarm|timer|one)$/.test(tokens[start + 2] ?? '')
+    return ordinal ? undefined : { value: 1, next: start + 1 }
+  }
   const ones = ENGLISH_ONES[word]
   if (ones !== undefined) return { value: ones, next: start + 1 }
   const tens = ENGLISH_TENS[word]
@@ -127,10 +151,10 @@ function isAndAHalf (tokens: readonly string[], at: number): boolean {
   return tokens[at] === 'and' && tokens[at + 1] === 'a' && tokens[at + 2] === 'half'
 }
 
-function readEnglishSegment (tokens: readonly string[], start: number): { ms: number; next: number } | undefined {
+function readEnglishSegment (tokens: readonly string[], start: number): { ms: number; next: number; unitMs: number } | undefined {
   if (tokens[start] === 'half' && (tokens[start + 1] === 'a' || tokens[start + 1] === 'an')) {
     const unitMs = ENGLISH_UNITS[tokens[start + 2] ?? '']
-    return unitMs === undefined ? undefined : { ms: unitMs / 2, next: start + 3 }
+    return unitMs === undefined ? undefined : { ms: unitMs / 2, next: start + 3, unitMs }
   }
   const number = readEnglishNumber(tokens, start)
   if (!number) return undefined
@@ -146,22 +170,28 @@ function readEnglishSegment (tokens: readonly string[], start: number): { ms: nu
     value += 0.5
     next += 3
   }
-  return { ms: value * unitMs, next }
+  return { ms: value * unitMs, next, unitMs }
 }
 
 export function extractEnglishDuration (tokens: readonly string[]): DurationMatch | undefined {
   for (let start = 0; start < tokens.length; start++) {
     const first = readEnglishSegment(tokens, start)
     if (!first) continue
-    let { ms, next } = first
+    let { ms, next, unitMs } = first
     for (;;) {
       const skip = tokens[next] === 'and' ? 1 : 0
       const more = readEnglishSegment(tokens, next + skip)
       if (!more) break
       ms += more.ms
       next = more.next
+      unitMs = more.unitMs
     }
-    return { ms: Math.round(ms), rest: [...tokens.slice(0, start), ...tokens.slice(next)].join(' ') }
+    const seconds = unitMs === MINUTE && tokens[next] !== 'a' && tokens[next] !== 'an' ? readEnglishNumber(tokens, next) : undefined
+    if (seconds) {
+      ms += seconds.value * SECOND
+      next = seconds.next
+    }
+    return { ms: Math.round(ms), rest: [...tokens.slice(0, start), ...tokens.slice(next)].join(' '), after: tokens.slice(next).join(' ') }
   }
   return undefined
 }

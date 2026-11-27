@@ -24,12 +24,18 @@ test('wake word variants the model produces', () => {
     ['Hey timerbot, two minutes alarm.', 'two minutes alarm'],
     ['hey time a bot cancel', 'cancel'],
     ['Timer but, list alarms', 'list alarms'],
+    ['hey timer but cancel', 'cancel'],
   ]
   for (const [text, rest] of cases) assert.equal(detectWake(text)?.rest, rest, text)
 })
 
 test('chatter about timers does not wake the bot', () => {
-  for (const text of ['타이머 맞춰놨어?', '타이머 몇 분 남았지', '타이머 보여?', '타이머보니까 1분 남았네', 'set a timer for me', 'the timer is broken']) {
+  const cases = [
+    '타이머 맞춰놨어?', '타이머 몇 분 남았지', '타이머 보여?', '타이머보니까 1분 남았네',
+    '타이머보고 있어', '타이머보다 스톱워치가 낫지', '타이머보는 중', '타이머보면', '타이머보자', '타이머보이', '타이머보세요',
+    'set a timer for me', 'the timer is broken', 'I set the timer but it only had 2 minutes left',
+  ]
+  for (const text of cases) {
     assert.equal(detectWake(text), undefined, text)
   }
 })

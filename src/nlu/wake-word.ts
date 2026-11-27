@@ -1,8 +1,8 @@
 export type WakeMatch = { script: 'ko' | 'en'; rest: string }
 
 const KOREAN_CORE = /타이?임?머/g
-const KOREAN_SUFFIX = /^(?:[봇옷뽓벗]|보(?![여니면자이]))/
-const ENGLISH_WAKE = /\b(?:timer ?bot|time a bot|timer but)\b/
+const KOREAN_SUFFIX = /^(?:[봇옷뽓벗]|보(?![여니면자이고다는세]))/
+const ENGLISH_WAKE = /\b(?:timer ?bot|time a bot)\b|^(?:hey |a )?timer but\b/
 
 export function compactKorean (text: string): string {
   return text.replace(/[\s\p{P}]/gu, '')
