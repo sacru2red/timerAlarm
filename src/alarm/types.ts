@@ -1,7 +1,7 @@
 export type Lang = 'ko' | 'en'
 
 // index is the 1-based position in fireAt ascending order at command time.
-export type Target = { by: 'next' } | { by: 'index'; n: number } | { by: 'all' }
+export type Target = { by: 'next' } | { by: 'last' } | { by: 'index'; n: number } | { by: 'all' }
 
 // id is a per-guild increasing counter.
 export type Alarm = { id: number; fireAt: number; lang: Lang }

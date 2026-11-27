@@ -132,6 +132,7 @@ export class AlarmScheduler {
   #select (guild: Guild, target: Target): Entry[] {
     const sorted = this.#sorted(guild)
     if (target.by === 'all') return sorted
+    if (target.by === 'last') return sorted.slice(-1)
     const entry = sorted[target.by === 'next' ? 0 : target.n - 1]
     return entry ? [entry] : []
   }

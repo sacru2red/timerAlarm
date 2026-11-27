@@ -143,9 +143,20 @@ test('index n picks the nth alarm by fireAt, and a missing index is notFound', t
   assert.deepEqual(scheduler.list('A').map(a => a.fireAt), [10_000, 30_000])
 })
 
+test('last picks the alarm with the latest fireAt', t => {
+  const { scheduler } = setup(t)
+  scheduler.set('A', 30_000, 'ko')
+  scheduler.set('A', 10_000, 'ko')
+  scheduler.set('A', 20_000, 'en')
+
+  assert.deepEqual(scheduler.cancel('A', { by: 'last' }), { result: 'ok', alarms: [{ id: 1, fireAt: 30_000, lang: 'ko' }] })
+  assert.deepEqual(scheduler.shift('A', 10_000, { by: 'last' }), { result: 'ok', alarms: [{ id: 3, fireAt: 30_000, lang: 'en' }] })
+  assert.deepEqual(scheduler.list('A').map(a => a.fireAt), [10_000, 30_000])
+})
+
 test('every target is notFound when the guild has no alarms', t => {
   const { scheduler } = setup(t)
-  for (const target of [{ by: 'next' }, { by: 'index', n: 1 }, { by: 'all' }] as const) {
+  for (const target of [{ by: 'next' }, { by: 'last' }, { by: 'index', n: 1 }, { by: 'all' }] as const) {
     assert.deepEqual(scheduler.shift('A', 10_000, target), { result: 'notFound' })
     assert.deepEqual(scheduler.cancel('A', target), { result: 'notFound' })
   }
