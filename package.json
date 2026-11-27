@@ -18,7 +18,8 @@
     "fetch-model": "node scripts/fetch-model.ts",
     "encode-clips": "node scripts/encode-clips.ts",
     "stt-bench": "node scripts/stt-bench.ts",
-    "load-test": "node scripts/load-test.ts"
+    "load-test": "node scripts/load-test.ts",
+    "check-clips": "node scripts/check-clips.ts"
   },
   "dependencies": {
     "@discordjs/opus": "^0.11.0",

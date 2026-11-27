@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.sample
+data
+models
+node_modules
+.git
+.claude
+.omc
+test

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CueKind, Lang, SchedulerResult } from '../alarm/types.ts'
 
@@ -44,6 +44,17 @@ export function loadClips (dir: string): ClipLibrary {
   return recordOf(LANGS, lang => recordOf(CLIP_KINDS, kind => {
     const packets = unpackFrames(readFileSync(clipPath(dir, lang, kind)))
     return { kind, packets, durationMs: packets.length * FRAME_MS }
+  }))
+}
+
+export function clipProblems (dir: string): string[] {
+  return LANGS.flatMap(lang => CLIP_KINDS.flatMap(kind => {
+    const path = clipPath(dir, lang, kind)
+    if (!existsSync(path)) return [`${path} is missing`]
+    const packets = unpackFrames(readFileSync(path))
+    if (packets.length === 0) return [`${path} is empty`]
+    const durationMs = packets.length * FRAME_MS
+    return CUE_KINDS.includes(kind as CueKind) && durationMs > MAX_CUE_CLIP_MS ? [`${path} is ${durationMs}ms, cue clips must be <= ${MAX_CUE_CLIP_MS}ms`] : []
   }))
 }
 
