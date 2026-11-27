@@ -5,8 +5,8 @@ import { currentBehavior, label, loadCorpus } from './corpus.ts'
 
 const corpus = loadCorpus('./fixtures/transcripts.jsonl')
 
-test('corpus has 20 lines and every line has an expectation', () => {
-  assert.equal(corpus.length, 20)
+test('corpus has 30 lines and every line has an expectation', () => {
+  assert.equal(corpus.length, 30)
   for (const line of corpus) assert.equal(typeof line.expected.wake, 'boolean', label(line))
 })
 
