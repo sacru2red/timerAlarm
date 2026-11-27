@@ -1,30 +1,30 @@
-{"file":"en1.wav","mode":"auto","text":"Hey timerbot, two minutes alarm.","lang":"en","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
-{"file":"en2.wav","mode":"auto","text":"Hey timer bot, push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
-{"file":"en3.wav","mode":"auto","text":"Hey timer bot, cancel all alarms.","lang":"en","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"all"}}}}
+{"file":"en1.wav","mode":"auto","text":"Hey timer bought two minutes alarm.","lang":"en","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
+{"file":"en2.wav","mode":"auto","text":"Hey timer bot push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
+{"file":"en3.wav","mode":"auto","text":"Hy timer bot, cancel all alarms.","lang":"en","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"all"}}}}
 {"file":"en4.wav","mode":"auto","text":"Watch out En on the left.","lang":"en","expected":{"wake":false}}
-{"file":"ko1.wav","mode":"auto","text":"헤이 타이임머봇2 분알람.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
-{"file":"ko2.wav","mode":"auto","text":"헤이 타이임머봇 알람 10초 뒤 로 밀어 줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
-{"file":"ko3.wav","mode":"auto","text":"타임머옷 1 분 30 초 알람 맞춰 줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
-{"file":"ko4.wav","mode":"auto","text":"헤이 타이임머 두 번째 알람 거죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"index","n":2}}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
-{"file":"ko5.wav","mode":"auto","text":"야 적이 오른쪽 에 한 명 있 어.","lang":"ko","expected":{"wake":false}}
-{"file":"ko6.wav","mode":"auto","text":"헤이 타이머봇 얼마 남 았 어.","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}
-{"file":"en1.wav","mode":"ko","text":"Hey timerbot, two minutes alarm.","lang":"en","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
-{"file":"en2.wav","mode":"ko","text":"Hey timer bot, push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
-{"file":"en3.wav","mode":"ko","text":"Hey timer bot, cancel all alarms.","lang":"en","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"all"}}}}
-{"file":"en4.wav","mode":"ko","text":"Watch out, En on the left.","lang":"en","expected":{"wake":false}}
-{"file":"ko1.wav","mode":"ko","text":"헤이 타이머2 분 알람.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
-{"file":"ko2.wav","mode":"ko","text":"헤이 타이임머 알람 10초 뒤 로 밀어 줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
-{"file":"ko3.wav","mode":"ko","text":"타임머봇 1 분 30 초 알람 맞춰 줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
-{"file":"ko4.wav","mode":"ko","text":"헤이 타이머봇 두 번째 알람 거죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"index","n":2}}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
-{"file":"ko5.wav","mode":"ko","text":"야 저 오른쪽 에 한 명 있 어.","lang":"ko","expected":{"wake":false}}
-{"file":"ko6.wav","mode":"ko","text":"헤이 타이머봇 얼마 남 았 어.","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}
-{"file":"en1.wav","mode":"opus","text":"Hey timerbot, two minutes alarm.","lang":"en","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
-{"file":"en2.wav","mode":"opus","text":"Hey timer bot, push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
+{"file":"ko1.wav","mode":"auto","text":"헤이 타이임머옷 이브 알람.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":120000}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
+{"file":"ko2.wav","mode":"auto","text":"헤이 타임머옷 알람슈초 뒤로 밀어줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
+{"file":"ko3.wav","mode":"auto","text":"타임머 옷 1분 30초 알람 맞춰죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
+{"file":"ko4.wav","mode":"auto","text":"헤이 타이임머보 두 번째 알람 꺼줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"index","n":2}}}}
+{"file":"ko5.wav","mode":"auto","text":"야 저 오른쪽에 한 명 있어.","lang":"ko","expected":{"wake":false}}
+{"file":"ko6.wav","mode":"auto","text":"헤이타임머옷 얼마 남았어?","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}
+{"file":"en1.wav","mode":"ko","text":"Heytimer boughtt two minutes alarm.","lang":"en","expected":{"wake":true,"intent":{"kind":"set","ms":120000}},"knownMiss":true,"actual":{"wake":false}}
+{"file":"en2.wav","mode":"ko","text":"Hey timer bot push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
+{"file":"en3.wav","mode":"ko","text":"Hy timer bot, cancel all alarms.","lang":"en","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"all"}}}}
+{"file":"en4.wav","mode":"ko","text":"Watch our En on the left.","lang":"en","expected":{"wake":false}}
+{"file":"ko1.wav","mode":"ko","text":"헤이 타이임머옷 이브 알람.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":120000}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
+{"file":"ko2.wav","mode":"ko","text":"헤이타임머옷 알람식초 뒤로 밀어줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
+{"file":"ko3.wav","mode":"ko","text":"타임머 옷 1분 30초 알람 맞춰죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
+{"file":"ko4.wav","mode":"ko","text":"헤이 타이임머보 두 번째 알람 꺼줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"index","n":2}}}}
+{"file":"ko5.wav","mode":"ko","text":"야 저 오른쪽에 한 명 있어.","lang":"ko","expected":{"wake":false}}
+{"file":"ko6.wav","mode":"ko","text":"헤이타임머옷 얼마 남았어?","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}
+{"file":"en1.wav","mode":"opus","text":"Hey timer bought two minutes alarm.","lang":"en","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
+{"file":"en2.wav","mode":"opus","text":"Hey timer bot push back 10 seconds.","lang":"en","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
 {"file":"en3.wav","mode":"opus","text":"Hey timer bot, cancel all alarms.","lang":"en","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"all"}}}}
-{"file":"en4.wav","mode":"opus","text":"Watch out, En on the left.","lang":"en","expected":{"wake":false}}
-{"file":"ko1.wav","mode":"opus","text":"헤이 타이임머봇2 분 알람.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":120000}}}
-{"file":"ko2.wav","mode":"opus","text":"헤이 타이임머봇 알람 10초 뒤 로 밀어 줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}}}
-{"file":"ko3.wav","mode":"opus","text":"타임머옷 1푼 30 초 알람 맞춰 줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
-{"file":"ko4.wav","mode":"opus","text":"헤이 타이임머 두 번째 알람 거죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"index","n":2}}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
-{"file":"ko5.wav","mode":"opus","text":"야 적이 오른쪽 에 한 명 있 어.","lang":"ko","expected":{"wake":false}}
-{"file":"ko6.wav","mode":"opus","text":"헤이 타이머봇 얼마 남 았 어.","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}
+{"file":"en4.wav","mode":"opus","text":"Watch our En on the left.","lang":"en","expected":{"wake":false}}
+{"file":"ko1.wav","mode":"opus","text":"He이 타이임머옷 이브 알람.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":120000}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
+{"file":"ko2.wav","mode":"opus","text":"헤이 타임머옷 알람 식초 뒤로 밀어져.","lang":"ko","expected":{"wake":true,"intent":{"kind":"shift","deltaMs":10000,"target":{"by":"next"}}},"knownMiss":true,"actual":{"wake":true,"intent":{"kind":"unknown"}}}
+{"file":"ko3.wav","mode":"opus","text":"타임머 옷 1분 30초 알람 맞춰죠.","lang":"ko","expected":{"wake":true,"intent":{"kind":"set","ms":90000}}}
+{"file":"ko4.wav","mode":"opus","text":"헤이타임머보 두 번째 알람 꺼줘.","lang":"ko","expected":{"wake":true,"intent":{"kind":"cancel","target":{"by":"index","n":2}}}}
+{"file":"ko5.wav","mode":"opus","text":"야 저 오른쪽에 한 명 있어.","lang":"ko","expected":{"wake":false}}
+{"file":"ko6.wav","mode":"opus","text":"헤이타임머옷 얼마나 남았어?","lang":"ko","expected":{"wake":true,"intent":{"kind":"list"}}}

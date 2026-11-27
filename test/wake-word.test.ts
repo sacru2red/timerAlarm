@@ -25,6 +25,14 @@ test('wake word variants the model produces', () => {
     ['hey time a bot cancel', 'cancel'],
     ['Timer but, list alarms', 'list alarms'],
     ['hey timer but cancel', 'cancel'],
+    ['페이 타이머봇 육분 알람.', '육분알람'],
+    ['케이 타이임머버 두번째 알람꺼 죠.', '버두번째알람꺼죠'],
+    ['제이 타이이머 보다 알람 30 초 당겨줘.', '보다알람30초당겨줘'],
+    ['헤이타임 어옷 6분 알람.', '6분알람'],
+    ['Kytimerbot set an alarm for two minutes.', 'set an alarm for two minutes'],
+    ['Hey timer bot, cancel', 'cancel'],
+    ['Hey timer bought two minutes alarm.', 'two minutes alarm'],
+    ['Hey timert, how long is left?', 'how long is left'],
   ]
   for (const [text, rest] of cases) assert.equal(detectWake(text)?.rest, rest, text)
 })
@@ -33,6 +41,7 @@ test('chatter about timers does not wake the bot', () => {
   const cases = [
     '타이머 맞춰놨어?', '타이머 몇 분 남았지', '타이머 보여?', '타이머보니까 1분 남았네',
     '타이머보고 있어', '타이머보다 스톱워치가 낫지', '타이머보는 중', '타이머보면', '타이머보자', '타이머보이', '타이머보세요',
+    '드래곤 타이머 몇 분이야', '바론 타이머 봐봐 곧이야', '타머 맞춰나스 누가가', '타이어 바꿨어', '제이가 타이머 맞췄대',
     'set a timer for me', 'the timer is broken', 'I set the timer but it only had 2 minutes left',
   ]
   for (const text of cases) {

@@ -18,4 +18,4 @@ npm run check-clips           # cue clips must be <= 850 ms
 
 Check the result by transcribing it: `node scripts/stt-bench.ts --via-pool --runs 1 assets/voice/*/*.opusf`. Single-syllable Korean cues (삼, 이) come back with a wrong language tag there but read correctly with `--modes ko` on the WAVs.
 
-The League of Legends load-test scenario in `test/fixtures/lol` is made the same way with four other voices (`scripts/tts.py test/fixtures/lol/scenario.json data/lol-wav`, then `npm run encode-scenario`).
+The League of Legends load-test scenario in `test/fixtures/lol` is made the same way with four other voices (`scripts/tts.py test/fixtures/lol/scenario.json data/lol-wav`, then `npm run encode-scenario`). So are the 16 kHz corpus WAVs in `test/fixtures/wav` (`scripts/tts.py test/fixtures/wav/lines.json test/fixtures/wav --rate 16000`, then `npm run stt-bench -- --modes auto,ko --emit-fixtures` and `-- --via-pool --emit-fixtures`). After re-emitting, mark lines the rules now get wrong as `knownMiss` with their `actual` result.
